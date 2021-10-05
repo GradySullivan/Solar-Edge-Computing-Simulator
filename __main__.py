@@ -102,27 +102,24 @@ def simplify_time(sec):
         print(f'[Simulated Time] {sec} second(s)')
 
 
-def open_config():
-    return None
+def config_setup():
+    config_info = {}
+    with open('config.txt', 'r') as file:
+        reader = csv.reader(file, delimiter=':')
+        next(reader)  # skip header
+        for line in reader:
+            config_info[line[0]] = line[1]
+
+    return int(config_info['Nodes']), int(config_info['Servers per Node']), int(config_info['Cores per Server']), \
+           int(config_info['Memory per Server']), float(config_info['Power per Server Needed']), \
+           float(config_info['PV Efficiency']), float(config_info['PV Area'])
 
 
 if __name__ == '__main__':
     start_time = time.time()  # start timer
 
-    config_info = {}
-    with open('config.txt', 'r') as txt_file:
-        txt_reader = csv.reader(txt_file, delimiter=':')
-        next(txt_reader)  # skip header
-        for line in txt_reader:
-            config_info[line[0]] = line[1]
-
-    num_edges = int(config_info['Nodes'])
-    num_servers = int(config_info['Servers per Node'])
-    server_cores = int(config_info['Cores per Server'])
-    server_memory = int(config_info['Memory per Server'])
-    power_per_server = float(config_info['Power per Server Needed'])
-    edge_pv_efficiency = float(config_info['PV Efficiency'])
-    edge_pv_area = float(config_info['PV Area'])
+    num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area = \
+        config_setup()
 
     edge_computing_systems = {}  # dictionary: edge_site:servers
     edges = np.array([])
@@ -180,12 +177,12 @@ if __name__ == '__main__':
                 servers_on = num_servers
                 power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
                 if power == 0:  # turn off all servers if no power
-                    #print('shutting down all servers')
+                    # print('shutting down all servers')
                     for server in edge.servers:
                         server.on = False
                     server_power_updated = True
                 elif power / servers_on < power_per_server:  # determine how to shut down sites
-                    #print('power', power)
+                    # print('power', power)
                     application_progression = {}
                     while power / servers_on < power_per_server and servers_on > 0:
                         for server in edge.servers:
@@ -214,7 +211,7 @@ if __name__ == '__main__':
                     for application in list(server.applications_running.keys()):  # for each application running...
                         if application not in processing:  # if the application wasn't added in this time iteration...
                             application.time_left -= 1
-                            #print(application, 'Time Left', application.time_left)
+                            # print(application, 'Time Left', application.time_left)
                             if application.time_left <= 0:
                                 server.stop_application()
                             processing.append(application)  # to prevent application decrementing multiple times
