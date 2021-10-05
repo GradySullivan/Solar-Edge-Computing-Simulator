@@ -1,6 +1,6 @@
 import time
 import numpy as np
-import csv
+from setup import *
 
 
 class EdgeSystem:
@@ -60,28 +60,6 @@ def get_applications_running(edge_dictionary):
     return True
 
 
-def check_min_req(application_list, edge_sites):
-    max_cores = 0
-    max_memory = 0
-
-    for app in application_list:
-        if app.cores > max_cores:
-            max_cores = app.cores
-        if app.memory > max_memory:
-            max_memory = app.memory
-
-    if max_cores > server_cores and max_memory > server_memory:
-        print(f'Allotted {server_cores} core(s) per server. Minimum of {max_cores} required')
-        print(f'Allotted {server_memory} MB of memory per server. Minimum of {max_memory} MB required')
-        quit()
-    if max_cores > server_cores:
-        print(f'Allotted {server_cores} core(s) per server. Minimum of {max_cores} required')
-        quit()
-    elif max_memory > server_memory:
-        print(f'Allotted {server_memory} MB of memory per server. Minimum of {max_memory} MB required')
-        quit()
-
-
 def simplify_time(sec):
     day, hr, minute = 0, 0, 0
     if sec >= 60:
@@ -101,20 +79,6 @@ def simplify_time(sec):
         print(f'[Simulated Time] {minute} minute(s), {sec} second(s)')
     else:
         print(f'[Simulated Time] {sec} second(s)')
-
-
-def config_setup():
-    config_info = {}
-    with open('config.txt', 'r') as file:
-        reader = csv.reader(file, delimiter=':')
-        next(reader)  # skip header
-        for line in reader:
-            config_info[line[0]] = line[1]
-
-    return int(config_info['Nodes']), int(config_info['Servers per Node']), int(config_info['Cores per Server']), \
-           int(config_info['Memory per Server']), float(config_info['Power per Server Needed']), \
-           float(config_info['PV Efficiency']), float(config_info['PV Area']), config_info['Traces'].strip(), \
-            config_info['Irradiance List'].strip()
 
 
 def generate_nodes(num_edges, num_servers):
@@ -149,16 +113,6 @@ def generate_applications(file):
     return applications
 
 
-def generate_irradiance_list(file):
-    irr_list = []
-    with open(file, 'r') as txt_file:
-        txt_reader = csv.reader(txt_file, delimiter=',')
-        next(txt_reader)  # skip header
-        for row in txt_reader:
-            irr_list.append(float(row[0]))
-    return irr_list
-
-
 if __name__ == '__main__':
     start_time = time.time()  # start timer
 
@@ -168,7 +122,7 @@ if __name__ == '__main__':
     edge_computing_systems = generate_nodes(num_edges, num_servers)  # generate dictionary with node:server(s) pairs
     applications = generate_applications(trace_info)  # generate list of application instances
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiances
-    check_min_req(applications, edge_computing_systems)  # checks minimum requirements to prevent infinite loops
+    check_min_req(applications, edge_computing_systems, server_cores, server_memory)  # checks minimum requirements to prevent infinite loops
 
     # ------------------ simulation ----------------
 
