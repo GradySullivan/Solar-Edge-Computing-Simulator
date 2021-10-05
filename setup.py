@@ -1,5 +1,7 @@
 import csv
 import numpy as np
+from __main__ import *
+from edge_computing_system import *
 
 
 def config_setup():
@@ -14,6 +16,38 @@ def config_setup():
            int(config_info['Memory per Server']), float(config_info['Power per Server Needed']), \
            float(config_info['PV Efficiency']), float(config_info['PV Area']), config_info['Traces'].strip(), \
             config_info['Irradiance List'].strip()
+
+
+def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores, server_memory):
+    edge_computing_systems = {}  # dictionary: edge_site:servers
+    edges = np.array([])
+    servers = np.array([])
+
+    # create edge sites
+    for edge in range(num_edges):
+        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area)
+        for server in range(num_servers):
+            servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory))
+        edge_site.servers = servers
+        edge_computing_systems[edge_site] = servers
+    return edge_computing_systems
+
+
+def generate_applications(file):
+    # create applications
+    applications = []  # initialize list of class instances
+    with open(file, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        next(csv_reader)  # skip header
+        for row in csv_reader:
+            runtime = int(row[2])
+            cores = int(row[3])
+            try:
+                memory = int(row[5])
+            except:
+                continue
+            applications.append(Application(runtime, cores, memory))  # instance for each application
+    return applications
 
 
 def generate_irradiance_list(file):

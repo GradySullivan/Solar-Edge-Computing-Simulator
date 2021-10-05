@@ -1,5 +1,5 @@
 Config
-Nodes: 1
+Nodes: 8
 Servers per Node: 1
 Cores per Server: 10
 Memory per Server: 4096

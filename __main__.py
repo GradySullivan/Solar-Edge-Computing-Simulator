@@ -1,55 +1,7 @@
 import time
 import numpy as np
 from setup import *
-
-
-class EdgeSystem:
-    def __init__(self, pv_efficiency, pv_area):
-        self.pv_efficiency = pv_efficiency  # between 0 and 1
-        self.pv_area = pv_area  # in m^2
-        self.servers = []
-        self.lat = None
-        self.long = None
-
-    def get_server_object(self, cores, memory):
-        return self.Server(cores, memory)
-
-    def get_power_generated(self, irradiance):
-        # P_n = eta * G_T * A_n
-        return self.pv_efficiency * irradiance * self.pv_area
-
-    class Server:
-        def __init__(self, cores, memory):
-            self.cores = cores  # per server
-            self.memory = memory  # per server, in MB
-            self.on = False
-            self.applications_running = {}
-
-        def update_resources(self, decision, app):
-            if decision == 'restore':
-                self.cores += app.cores  # cores available increases
-                self.memory += app.memory  # memory available increases
-            if decision == 'reduce':
-                self.cores -= app.cores  # cores available increases
-                self.memory -= app.memory  # memory available increases
-
-        def start_application(self):
-            print('processing', application)
-            self.update_resources('reduce', application)
-            self.applications_running[application] = application.time_left  # application in "running" dict
-
-        def stop_application(self):
-            print('completed', application)
-            self.update_resources('restore', application)
-            del self.applications_running[application]  # delete from applications list if completed
-
-
-class Application:
-    def __init__(self, runtime, cores, memory):
-        self.runtime = runtime
-        self.cores = cores
-        self.memory = memory
-        self.time_left = runtime
+from edge_computing_system import *
 
 
 def get_applications_running(edge_dictionary):
@@ -81,48 +33,20 @@ def simplify_time(sec):
         print(f'[Simulated Time] {sec} second(s)')
 
 
-def generate_nodes(num_edges, num_servers):
-    edge_computing_systems = {}  # dictionary: edge_site:servers
-    edges = np.array([])
-    servers = np.array([])
-
-    # create edge sites
-    for edge in range(num_edges):
-        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area)
-        for server in range(num_servers):
-            servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory))
-        edge_site.servers = servers
-        edge_computing_systems[edge_site] = servers
-    return edge_computing_systems
-
-
-def generate_applications(file):
-    # create applications
-    applications = []  # initialize list of class instances
-    with open(file, 'r') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        next(csv_reader)  # skip header
-        for row in csv_reader:
-            runtime = int(row[2])
-            cores = int(row[3])
-            try:
-                memory = int(row[5])
-            except:
-                continue
-            applications.append(Application(runtime, cores, memory))  # instance for each application
-    return applications
-
-
 if __name__ == '__main__':
     start_time = time.time()  # start timer
 
     num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
         trace_info, irradiance_info = config_setup()  # variables configured by config file
 
-    edge_computing_systems = generate_nodes(num_edges, num_servers)  # generate dictionary with node:server(s) pairs
+    edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
+                                            server_memory)  # generate dictionary with node:server(s) pairs
+
     applications = generate_applications(trace_info)  # generate list of application instances
+
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiances
-    check_min_req(applications, edge_computing_systems, server_cores, server_memory)  # checks minimum requirements to prevent infinite loops
+
+    check_min_req(applications, edge_computing_systems, server_cores, server_memory)  # prevents infinite loops
 
     # ------------------ simulation ----------------
 
@@ -187,7 +111,7 @@ if __name__ == '__main__':
                             application.time_left -= 1
                             # print(application, 'Time Left', application.time_left)
                             if application.time_left <= 0:
-                                server.stop_application()
+                                server.stop_application(application)
                             processing.append(application)  # to prevent application decrementing multiple times
 
         # start applications
@@ -196,7 +120,7 @@ if __name__ == '__main__':
                 if server.on is True:
                     for application in list(applications):  # for each application that still needs to run
                         if (application.memory <= server.memory) and (application.cores <= server.cores):
-                            server.start_application()
+                            server.start_application(application)
                             applications.remove(application)  # remove from to-do list
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
