@@ -6,3 +6,5 @@ Memory per Server: 4096
 Power per Server Needed: 250
 PV Efficiency: .22
 PV Area: 5
+Traces: traces-2019_test.csv
+Irradiance List: irradiance.txt

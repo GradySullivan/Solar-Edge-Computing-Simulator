@@ -63,6 +63,7 @@ def get_applications_running(edge_dictionary):
 def check_min_req(application_list, edge_sites):
     max_cores = 0
     max_memory = 0
+
     for app in application_list:
         if app.cores > max_cores:
             max_cores = app.cores
@@ -112,15 +113,11 @@ def config_setup():
 
     return int(config_info['Nodes']), int(config_info['Servers per Node']), int(config_info['Cores per Server']), \
            int(config_info['Memory per Server']), float(config_info['Power per Server Needed']), \
-           float(config_info['PV Efficiency']), float(config_info['PV Area'])
+           float(config_info['PV Efficiency']), float(config_info['PV Area']), config_info['Traces'].strip(), \
+            config_info['Irradiance List'].strip()
 
 
-if __name__ == '__main__':
-    start_time = time.time()  # start timer
-
-    num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area = \
-        config_setup()
-
+def generate_nodes(num_edges, num_servers):
     edge_computing_systems = {}  # dictionary: edge_site:servers
     edges = np.array([])
     servers = np.array([])
@@ -132,10 +129,13 @@ if __name__ == '__main__':
             servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory))
         edge_site.servers = servers
         edge_computing_systems[edge_site] = servers
+    return edge_computing_systems
 
+
+def generate_applications(file):
     # create applications
     applications = []  # initialize list of class instances
-    with open('traces-2019_test.csv', 'r') as csv_file:
+    with open(file, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)  # skip header
         for row in csv_reader:
@@ -146,17 +146,32 @@ if __name__ == '__main__':
             except:
                 continue
             applications.append(Application(runtime, cores, memory))  # instance for each application
+    return applications
 
-    irradiance_list = []
-    with open('irradiance.txt', 'r') as txt_file:
+
+def generate_irradiance_list(file):
+    irr_list = []
+    with open(file, 'r') as txt_file:
         txt_reader = csv.reader(txt_file, delimiter=',')
         next(txt_reader)  # skip header
         for row in txt_reader:
-            irradiance_list.append(float(row[0]))
+            irr_list.append(float(row[0]))
+    return irr_list
+
+
+if __name__ == '__main__':
+    start_time = time.time()  # start timer
+
+    num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
+        trace_info, irradiance_info = config_setup()  # variables configured by config file
+
+    edge_computing_systems = generate_nodes(num_edges, num_servers)  # generate dictionary with node:server(s) pairs
+    applications = generate_applications(trace_info)  # generate list of application instances
+    irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiances
+    check_min_req(applications, edge_computing_systems)  # checks minimum requirements to prevent infinite loops
 
     # ------------------ simulation ----------------
 
-    check_min_req(applications, edge_computing_systems)  # checks minimum requirements to prevent infinite loops
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
 
     while len(applications) != 0 or all_servers_empty is False:
@@ -176,13 +191,17 @@ if __name__ == '__main__':
             for edge in edge_computing_systems.keys():
                 servers_on = num_servers
                 power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
+                '''print('------------')
+                print('power', power)
+                print('servers on', servers_on)
+                print('p/s', power / servers_on)
+                print('pps', power_per_server)'''
                 if power == 0:  # turn off all servers if no power
-                    # print('shutting down all servers')
+                    print('shutting down all servers')
                     for server in edge.servers:
                         server.on = False
                     server_power_updated = True
                 elif power / servers_on < power_per_server:  # determine how to shut down sites
-                    # print('power', power)
                     application_progression = {}
                     while power / servers_on < power_per_server and servers_on > 0:
                         for server in edge.servers:
@@ -197,6 +216,7 @@ if __name__ == '__main__':
                             del application_progression[min_server]
                             servers_on -= 1
                         if servers_on == 0:
+                            print('shutting down all servers')
                             for server in edge.servers:
                                 server.on = False
                             break
