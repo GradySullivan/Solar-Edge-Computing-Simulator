@@ -1,7 +1,8 @@
 import time
-import numpy as np
+import random
+from itertools import combinations
+from geopy.distance import geodesic as gd
 from setup import *
-from edge_computing_system import *
 
 
 def get_applications_running(edge_dictionary):
@@ -41,6 +42,15 @@ if __name__ == '__main__':
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory)  # generate dictionary with node:server(s) pairs
+
+    location_distances = {}  # dictionary lookup table; (loc1, loc2): distance
+    if len(edge_computing_systems) > 1:  # only does if more than one node
+        combos = combinations(edge_computing_systems, 2)  # every combination of two nodes
+        for pair in combos:
+            loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
+            loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2
+            location_distances[pair] = gd(loc1, loc2)  # calculate distance between locations, add to dictionary
+    print(location_distances)
 
     applications = generate_applications(trace_info)  # generate list of application instances
 

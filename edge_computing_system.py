@@ -1,10 +1,10 @@
 class EdgeSystem:
-    def __init__(self, pv_efficiency, pv_area):
+    def __init__(self, pv_efficiency, pv_area, lat, long):
         self.pv_efficiency = pv_efficiency  # between 0 and 1
         self.pv_area = pv_area  # in m^2
         self.servers = []
-        self.lat = None
-        self.long = None
+        self.lat = lat
+        self.long = long
 
     def get_server_object(self, cores, memory):
         return self.Server(cores, memory)

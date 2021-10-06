@@ -1,4 +1,6 @@
 import csv
+import random
+
 import numpy as np
 from __main__ import *
 from edge_computing_system import *
@@ -20,17 +22,26 @@ def config_setup():
 
 def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores, server_memory):
     edge_computing_systems = {}  # dictionary: edge_site:servers
-    edges = np.array([])
     servers = np.array([])
 
     # create edge sites
     for edge in range(num_edges):
-        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area)
+        latitude, longitude = generate_location('random')
+        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude)
         for server in range(num_servers):
             servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory))
         edge_site.servers = servers
         edge_computing_systems[edge_site] = servers
     return edge_computing_systems
+
+
+def generate_location(method):
+    if method == 'random':
+        lat = random.uniform(-90, 90)
+        long = random.uniform(-180, 80)
+        return lat, long
+    else:
+        return None, None
 
 
 def generate_applications(file):
