@@ -1,6 +1,5 @@
 import csv
 import random
-
 import numpy as np
 from __main__ import *
 from edge_computing_system import *

@@ -79,11 +79,6 @@ if __name__ == '__main__':
             for edge in edge_computing_systems.keys():
                 servers_on = num_servers
                 power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
-                '''print('------------')
-                print('power', power)
-                print('servers on', servers_on)
-                print('p/s', power / servers_on)
-                print('pps', power_per_server)'''
                 if power == 0:  # turn off all servers if no power
                     print('shutting down all servers')
                     for server in edge.servers:
