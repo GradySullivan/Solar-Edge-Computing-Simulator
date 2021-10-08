@@ -61,7 +61,7 @@ if __name__ == '__main__':
     # ------------------ simulation ----------------
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
-    partially_completed_applications = {}  # apps that started running, but were shut down due to power constraints
+    partially_completed_applications = []  # apps that started running, but were shut down due to power constraints
 
     while len(applications) != 0 or len(partially_completed_applications) or all_servers_empty is False:
 
@@ -71,6 +71,7 @@ if __name__ == '__main__':
         partially_completed_applications = shutdown_servers(edge_computing_systems, partially_completed_applications, num_servers, power_per_server,
                          irradiance_list, processing_time)
         complete_applications(edge_computing_systems)  # completing applications
+
         start_applications(edge_computing_systems, applications)  # start new applications if resources available
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 

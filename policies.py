@@ -31,33 +31,24 @@ def shutdown_servers(edge_computing_systems, partially_completed_applications, n
     for edge in edge_computing_systems.keys():  # start by turning all servers back on
         for server in edge.servers:
             server.on = True
-    server_power_updated = False
 
     # turn off servers w/o enough power (priority to keep servers on that are closest to completing a task)
-    while server_power_updated is False:
-        for edge in edge_computing_systems.keys():
-            servers_on = num_servers
-            power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
-            if power == 0:  # turn off all servers if no power
-                print('shutting down all servers')
+    for edge in edge_computing_systems.keys():
+        servers_on = num_servers
+        power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
+        most_servers_on = math.floor(power / power_per_server)
+        if most_servers_on < servers_on:  # determine how to shut down sites
+            application_progression = {}
+            while most_servers_on < servers_on:
                 for server in edge.servers:
-                    server.on = False
-                server_power_updated = True
-            elif power / servers_on < power_per_server:  # determine how to shut down sites
-                application_progression = {}
-                while power / servers_on < power_per_server and servers_on > 0:
-                    for server in edge.servers:
-                        if server.applications_running == {}:
-                            server.on = False
-                            servers_on -= 1
-                            break
-                        application_progression[server] = max(server.applications_running).time_left
-                    if application_progression != {}:
-                        min_server = max(application_progression, key=application_progression.get)
-                        min_server.on = False
-                        del application_progression[min_server]
+                    if server.applications_running == {}:
+                        server.on = False
                         servers_on -= 1
-                server_power_updated = True
-            else:
-                server_power_updated = True
+                        break
+                    application_progression[server] = max(server.applications_running).time_left
+                if application_progression != {}:
+                    min_server = max(application_progression, key=application_progression.get)
+                    min_server.on = False
+                    del application_progression[min_server]
+                    servers_on -= 1
     return partially_completed_applications
