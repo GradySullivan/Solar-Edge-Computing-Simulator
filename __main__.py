@@ -53,7 +53,7 @@ if __name__ == '__main__':
             location_distances[pair] = gd(loc1, loc2)  # calculate distance between locations in km, add to dictionary
 
     applications = generate_applications(trace_info)  # generate list of application instances
-    print(applications)
+
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiances
 
     check_min_req(applications, edge_computing_systems, server_cores, server_memory)  # prevents infinite loops
@@ -68,8 +68,8 @@ if __name__ == '__main__':
         processing_time += 1
         print(f'Time = {processing_time}')
 
-        partially_completed_applications = shutdown_servers(edge_computing_systems, partially_completed_applications, num_servers, power_per_server,
-                         irradiance_list, processing_time)
+        applications = shutdown_servers(edge_computing_systems, partially_completed_applications, num_servers, power_per_server,
+                         irradiance_list, processing_time, applications)
         complete_applications(edge_computing_systems)  # completing applications
 
         start_applications(edge_computing_systems, applications)  # start new applications if resources available
