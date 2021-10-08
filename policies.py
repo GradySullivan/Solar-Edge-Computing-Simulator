@@ -38,22 +38,18 @@ def shutdown_servers(edge_computing_systems, partially_completed_applications, n
         for edge in edge_computing_systems.keys():
             servers_on = num_servers
             power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
-            need_to_turn_off = math.floor(power / power_per_server)
             if power == 0:  # turn off all servers if no power
                 print('shutting down all servers')
                 for server in edge.servers:
                     server.on = False
                 server_power_updated = True
             elif power / servers_on < power_per_server:  # determine how to shut down sites
-                if need_to_turn_off == 0:
-                    break
                 application_progression = {}
                 while power / servers_on < power_per_server and servers_on > 0:
                     for server in edge.servers:
                         if server.applications_running == {}:
                             server.on = False
                             servers_on -= 1
-                            need_to_turn_off -= 1
                             break
                         application_progression[server] = max(server.applications_running).time_left
                     if application_progression != {}:
@@ -61,7 +57,6 @@ def shutdown_servers(edge_computing_systems, partially_completed_applications, n
                         min_server.on = False
                         del application_progression[min_server]
                         servers_on -= 1
-                        need_to_turn_off -= 1
                 server_power_updated = True
             else:
                 server_power_updated = True

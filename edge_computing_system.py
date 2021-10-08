@@ -29,7 +29,7 @@ class EdgeSystem:
                 self.memory -= app.memory  # memory available increases
 
         def start_application(self, application):
-            print('processing', application)
+            #print('processing', application)
             self.update_resources('reduce', application)
             self.applications_running[application] = application.time_left  # application in "running" dict
 
