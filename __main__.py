@@ -35,6 +35,16 @@ def simplify_time(sec):
         print(f'[Simulated Time] {sec} second(s)')
 
 
+def decrement_time(edge_computing_systems):
+    for edge in edge_computing_systems.keys():  # for each edge computing site...
+        for server in edge.servers:  # for each server in a particular edge site
+            if server.on is True:
+                for application in list(server.applications_running.keys()):  # for each application running...
+                    application.time_left -= 1
+                    print('App', application, application.time_left)
+    return edge_computing_systems
+
+
 if __name__ == '__main__':
     start_time = time.time()  # start timer
 
@@ -67,9 +77,11 @@ if __name__ == '__main__':
 
         processing_time += 1
         print(f'Time = {processing_time}')
+        decrement_time(edge_computing_systems)
 
         applications = shutdown_servers(edge_computing_systems, partially_completed_applications, num_servers, power_per_server,
                          irradiance_list, processing_time, applications)
+
         complete_applications(edge_computing_systems)  # completing applications
 
         start_applications(edge_computing_systems, applications)  # start new applications if resources available

@@ -29,19 +29,21 @@ class EdgeSystem:
                 self.memory -= app.memory  # memory available increases
 
         def start_application(self, application):
-            #print('processing', application)
+            print('processing', application, application.time_left)
             self.update_resources('reduce', application)
             self.applications_running[application] = application.time_left  # application in "running" dict
+            application.parent = self
 
         def stop_application(self, application):
-            print('completed', application)
+            if application.time_left == 0:
+                print('completed', application)
             self.update_resources('restore', application)
             del self.applications_running[application]  # delete from applications list if completed
 
 
 class Application:
-    def __init__(self, runtime, cores, memory):
-        self.runtime = runtime
+    def __init__(self, runtime, cores, memory, parent):
         self.cores = cores
         self.memory = memory
         self.time_left = runtime
+        self.parent = parent

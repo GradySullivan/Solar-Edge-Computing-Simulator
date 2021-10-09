@@ -56,7 +56,7 @@ def generate_applications(file):
                 memory = int(row[5])
             except:
                 continue
-            applications.append(Application(runtime, cores, memory))  # instance for each application
+            applications.append(Application(runtime, cores, memory, None))  # instance for each application
     return applications
 
 
