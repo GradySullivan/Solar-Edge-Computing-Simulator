@@ -3,7 +3,8 @@ import random
 import numpy as np
 from __main__ import *
 from edge_computing_system import *
-
+from geopy.distance import geodesic as gd
+from itertools import combinations
 
 def config_setup():
     config_info = {}
@@ -26,7 +27,7 @@ def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, ser
     # create edge sites
     for edge in range(num_edges):
         latitude, longitude = generate_location('random')
-        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude)
+        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area)
         for server in range(num_servers):
             servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory))
         edge_site.servers = servers
@@ -56,7 +57,7 @@ def generate_applications(file):
                 memory = int(row[5])
             except:
                 continue
-            applications.append(Application(runtime, cores, memory, None))  # instance for each application
+            applications.append(Application(runtime, cores, memory))  # instance for each application
     return applications
 
 
@@ -68,6 +69,17 @@ def generate_irradiance_list(file):
         for row in txt_reader:
             irr_list.append(float(row[0]))
     return irr_list
+
+
+def get_distances(edge_computing_systems):
+    location_distances = {}  # dictionary lookup table; (loc1, loc2): distance
+    if len(edge_computing_systems) > 1:  # only does if more than one node
+        combos = combinations(edge_computing_systems, 2)  # every combination of two nodes
+        for pair in combos:
+            loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
+            loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2
+            location_distances[pair] = gd(loc1, loc2)  # calculate distance between locations in km, add to dictionary
+    return location_distances
 
 
 def check_min_req(application_list, edge_sites, server_cores, server_memory):

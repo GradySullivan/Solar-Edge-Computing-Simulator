@@ -1,9 +1,10 @@
 import time
-import random
-from itertools import combinations
-from geopy.distance import geodesic as gd
-from setup import *
+import numpy as np
+import csv
+from edge_computing_system import *
 from policies import *
+from setup import *
+from itertools import combinations
 
 
 def get_applications_running(edge_dictionary):
@@ -35,32 +36,18 @@ def simplify_time(sec):
         print(f'[Simulated Time] {sec} second(s)')
 
 
-def decrement_time(edge_computing_systems):
-    for edge in edge_computing_systems.keys():  # for each edge computing site...
-        for server in edge.servers:  # for each server in a particular edge site
-            if server.on is True:
-                for application in list(server.applications_running.keys()):  # for each application running...
-                    application.time_left -= 1
-                    print('App', application, application.time_left)
-    return edge_computing_systems
-
-
 if __name__ == '__main__':
     start_time = time.time()  # start timer
 
     num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
-        trace_info, irradiance_info = config_setup()  # variables configured by config file
+    trace_info, irradiance_info = config_setup()  # variables configured by config file
+
+    edge_computing_systems = {}  # dictionary: edge_site:servers
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory)  # generate dictionary with node:server(s) pairs
 
-    location_distances = {}  # dictionary lookup table; (loc1, loc2): distance
-    if len(edge_computing_systems) > 1:  # only does if more than one node
-        combos = combinations(edge_computing_systems, 2)  # every combination of two nodes
-        for pair in combos:
-            loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
-            loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2
-            location_distances[pair] = gd(loc1, loc2)  # calculate distance between locations in km, add to dictionary
+    location_distances = get_distances(edge_computing_systems)
 
     applications = generate_applications(trace_info)  # generate list of application instances
 
@@ -71,20 +58,52 @@ if __name__ == '__main__':
     # ------------------ simulation ----------------
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
-    partially_completed_applications = []  # apps that started running, but were shut down due to power constraints
 
-    while len(applications) != 0 or len(partially_completed_applications) or all_servers_empty is False:
+    while len(applications) != 0 or all_servers_empty is False:
 
         processing_time += 1
         print(f'Time = {processing_time}')
-        decrement_time(edge_computing_systems)
 
-        applications = shutdown_servers(edge_computing_systems, partially_completed_applications, num_servers, power_per_server,
-                         irradiance_list, processing_time, applications)
+        # determine which servers are on
+        for edge in edge_computing_systems.keys():  # start by turning all servers back on
+            for server in edge.servers:
+                server.on = True
+        server_power_updated = False
 
-        complete_applications(edge_computing_systems)  # completing applications
-
-        start_applications(edge_computing_systems, applications)  # start new applications if resources available
+        # turn off servers w/o enough power (priority to keep servers on that are closest to completing a task)
+        while server_power_updated is False:
+            for edge in edge_computing_systems.keys():
+                servers_on = num_servers
+                power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
+                if power == 0:  # turn off all servers if no power
+                    #print('shutting down all servers')
+                    for server in edge.servers:
+                        server.on = False
+                    server_power_updated = True
+                elif power / servers_on < power_per_server:  # determine how to shut down sites
+                    #print('power', power)
+                    application_progression = {}
+                    while power / servers_on < power_per_server and servers_on > 0:
+                        for server in edge.servers:
+                            if server.applications_running == {}:
+                                server.on = False
+                                servers_on -= 1
+                                break
+                            application_progression[server] = max(server.applications_running).time_left
+                        if application_progression != {}:
+                            min_server = max(application_progression, key=application_progression.get)
+                            min_server.on = False
+                            del application_progression[min_server]
+                            servers_on -= 1
+                        if servers_on == 0:
+                            for server in edge.servers:
+                                server.on = False
+                            break
+                    server_power_updated = True
+                else:
+                    server_power_updated = True
+        complete_applications(edge_computing_systems)
+        start_applications(edge_computing_systems, applications) # start applications
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
     simplify_time(processing_time)  # simulation time

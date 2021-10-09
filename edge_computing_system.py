@@ -1,10 +1,10 @@
 class EdgeSystem:
-    def __init__(self, pv_efficiency, pv_area, lat, long):
+    def __init__(self, pv_efficiency, pv_area):
         self.pv_efficiency = pv_efficiency  # between 0 and 1
         self.pv_area = pv_area  # in m^2
         self.servers = []
-        self.lat = lat
-        self.long = long
+        self.lat = None
+        self.long = None
 
     def get_server_object(self, cores, memory):
         return self.Server(cores, memory)
@@ -29,21 +29,19 @@ class EdgeSystem:
                 self.memory -= app.memory  # memory available increases
 
         def start_application(self, application):
-            print('processing', application, application.time_left)
+            print('processing', application)
             self.update_resources('reduce', application)
             self.applications_running[application] = application.time_left  # application in "running" dict
-            application.parent = self
 
         def stop_application(self, application):
-            if application.time_left == 0:
-                print('completed', application)
+            print('completed', application)
             self.update_resources('restore', application)
             del self.applications_running[application]  # delete from applications list if completed
 
 
 class Application:
-    def __init__(self, runtime, cores, memory, parent):
+    def __init__(self, runtime, cores, memory):
+        self.runtime = runtime
         self.cores = cores
         self.memory = memory
         self.time_left = runtime
-        self.parent = parent
