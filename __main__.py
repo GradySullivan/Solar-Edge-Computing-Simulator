@@ -60,51 +60,19 @@ if __name__ == '__main__':
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
 
     while len(applications) != 0 or all_servers_empty is False:
-
         processing_time += 1
         print(f'Time = {processing_time}')
 
-        # determine which servers are on
-        for edge in edge_computing_systems.keys():  # start by turning all servers back on
-            for server in edge.servers:
-                server.on = True
-        server_power_updated = False
-
-        # turn off servers w/o enough power (priority to keep servers on that are closest to completing a task)
-        while server_power_updated is False:
-            for edge in edge_computing_systems.keys():
-                servers_on = num_servers
-                power = edge.get_power_generated(irradiance_list[processing_time])  # update power available to edges
-                if power == 0:  # turn off all servers if no power
-                    #print('shutting down all servers')
-                    for server in edge.servers:
-                        server.on = False
-                    server_power_updated = True
-                elif power / servers_on < power_per_server:  # determine how to shut down sites
-                    #print('power', power)
-                    application_progression = {}
-                    while power / servers_on < power_per_server and servers_on > 0:
-                        for server in edge.servers:
-                            if server.applications_running == {}:
-                                server.on = False
-                                servers_on -= 1
-                                break
-                            application_progression[server] = max(server.applications_running).time_left
-                        if application_progression != {}:
-                            min_server = max(application_progression, key=application_progression.get)
-                            min_server.on = False
-                            del application_progression[min_server]
-                            servers_on -= 1
-                        if servers_on == 0:
-                            for server in edge.servers:
-                                server.on = False
-                            break
-                    server_power_updated = True
-                else:
-                    server_power_updated = True
+        applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
+                                        processing_time, applications)
         complete_applications(edge_computing_systems)
-        start_applications(edge_computing_systems, applications) # start applications
+        applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
+                                        processing_time, applications)
+        start_applications(edge_computing_systems, applications)  # start applications
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
-
+        '''for edge in edge_computing_systems.keys():
+            print(len(edge.servers))
+            for server in edge.servers:
+                print(server, len(server.applications_running))'''
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer

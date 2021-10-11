@@ -1,6 +1,6 @@
 Config
-Nodes: 3
-Servers per Node: 3
+Nodes: 4
+Servers per Node: 1
 Cores per Server: 10
 Memory per Server: 4096
 Power per Server Needed: 250

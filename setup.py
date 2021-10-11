@@ -6,6 +6,7 @@ from edge_computing_system import *
 from geopy.distance import geodesic as gd
 from itertools import combinations
 
+
 def config_setup():
     config_info = {}
     with open('config.txt', 'r') as file:
@@ -28,6 +29,7 @@ def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, ser
     for edge in range(num_edges):
         latitude, longitude = generate_location('random')
         edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area)
+        servers = np.array([])
         for server in range(num_servers):
             servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory))
         edge_site.servers = servers
