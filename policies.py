@@ -14,15 +14,24 @@ def start_applications(edge_computing_systems, applications, shortest_distances)
                             applications.remove(application)  # remove from to-do list
                         elif application.parent.parent and (server.parent == shortest_distances[edge][0]
                                                             or application.parent.parent == edge):
-                            if server.parent == shortest_distances[edge][0]:  # change server ***
-                                server.start_application(application)
-                                applications.remove(application)
-                                print('COST = ')
-                            elif application.parent.parent == edge:
+                            if server.parent == shortest_distances[edge][0]:  # application is transferring to new node
+                                # REVERT TO OLD FUNCTIONALITY BY UNCOMMENTING THE 2 LINES BELOW AND REMOVING NESTED IF/ELIF
+                                #server.start_application(application)
+                                #applications.remove(application)
+                                if application.delay == 0:
+                                    server.start_application(application)
+                                    application.delay = None
+                                    applications.remove(application)
+                                elif application.delay is None:
+                                    print('transfer initiated')
+                                    print(shortest_distances[edge][1])
+                                    application.delay = math.ceil(shortest_distances[edge][1] * .001)
+                                    print('delay = ', application.delay)
+
+                            elif application.parent.parent == edge:  # application is resuming on same node
                                 server.start_application(application)
                                 applications.remove(application)
                                 print('cost = 0')
-                            #print(server.parent, shortest_distances[edge][0], application.parent.parent, edge)
 
 
 def complete_applications(edge_computing_systems):
@@ -71,3 +80,10 @@ def shutdown_servers(edge_computing_systems, num_servers, power_per_server,
                         application_progression.remove(app)
                         partially_completed_applications.insert(0, app)
     return applications, partially_completed_applications
+
+
+def decrement_transfer_time(partially_completed_applications):
+    for application in partially_completed_applications:
+        if application.delay is not None:
+            application.delay -= 1
+    return partially_completed_applications

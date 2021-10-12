@@ -70,6 +70,7 @@ if __name__ == '__main__':
                                         processing_time, partially_completed_applications, applications)
 
         complete_applications(edge_computing_systems)
+        partially_completed_applications = decrement_transfer_time(partially_completed_applications)
 
         applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
                                         processing_time, partially_completed_applications, applications)
