@@ -5,6 +5,7 @@ from __main__ import *
 from edge_computing_system import *
 from geopy.distance import geodesic as gd
 from itertools import combinations
+from operator import itemgetter
 
 
 def config_setup():
@@ -73,16 +74,36 @@ def generate_irradiance_list(file):
     return irr_list
 
 
-def get_distances(edge_computing_systems):
+def get_distances(edge_computing_systems, num_edges):
+    if num_edges == 1:
+        return None
     location_distances = {}  # dictionary lookup table; (loc1, loc2): distance
     if len(edge_computing_systems) > 1:  # only does if more than one node
         combos = combinations(edge_computing_systems, 2)  # every combination of two nodes
         for pair in combos:
             loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
             loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2
-            location_distances[pair] = gd(loc1, loc2)  # calculate distance between locations in km, add to dictionary
-    print(location_distances)
+            location_distances[pair] = gd(loc1, loc2).km  # calculate distance between locations in km, add to dictionary
     return location_distances
+
+
+def get_shortest_distances(edge_computing_systems, location_distances, num_edges):
+    if num_edges == 1:
+        return None
+    shortest_distances = {}
+    potential_shortest = {}
+    for edge in edge_computing_systems.keys():
+        for key in location_distances.keys():
+            if key[0] == edge or key[1] == edge:
+                if key[0] != edge:
+                    potential_shortest[key[0]] = location_distances[key]
+                else:
+                    potential_shortest[key[1]] = location_distances[key]
+        #print(potential_shortest)
+        #print(min(potential_shortest.items(), key=itemgetter(1)))
+        shortest_distances[edge] = min(potential_shortest.items(), key=itemgetter(1))
+        #print(shortest_distances)
+    return shortest_distances
 
 
 def check_min_req(application_list, edge_sites, server_cores, server_memory):

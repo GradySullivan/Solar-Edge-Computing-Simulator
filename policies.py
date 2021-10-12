@@ -3,32 +3,26 @@ import time
 from operator import attrgetter
 
 
-def start_applications(edge_computing_systems, applications, location_distances):
+def start_applications(edge_computing_systems, applications, shortest_distances):
     for edge in edge_computing_systems.keys():  # for each edge computing site...
         for server in edge.servers:  # for each server in a particular edge site
             if server.on is True:
                 for application in list(applications):  # for each application that still needs to run
-                    if application.parent is not None:
-                        print(application.parent.parent, edge)
-                        print(location_distances.keys())
-                        print(len(location_distances.keys()))
-                        try:
-                            x = (location_distances[(edge, application.parent.parent)])
-                            print('zzz')
-                        except KeyError:
-                            pass
-                        try:
-                            y = (location_distances[(application.parent.parent, edge)])
-                            print('qqq')
-                        except KeyError:
-                            pass
-                    if application.parent is None:
-                        print('no parent')  # do stuff below
-
                     if (application.memory <= server.memory) and (application.cores <= server.cores):
-                        server.start_application(application)
-                        #print(server.parent, 'PARENT')
-                        applications.remove(application)  # remove from to-do list
+                        if application.parent is None:
+                            server.start_application(application)
+                            applications.remove(application)  # remove from to-do list
+                        elif application.parent.parent and (server.parent == shortest_distances[edge][0]
+                                                            or application.parent.parent == edge):
+                            if server.parent == shortest_distances[edge][0]:  # change server ***
+                                server.start_application(application)
+                                applications.remove(application)
+                                print('COST = ')
+                            elif application.parent.parent == edge:
+                                server.start_application(application)
+                                applications.remove(application)
+                                print('cost = 0')
+                            #print(server.parent, shortest_distances[edge][0], application.parent.parent, edge)
 
 
 def complete_applications(edge_computing_systems):

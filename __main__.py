@@ -5,6 +5,7 @@ from edge_computing_system import *
 from policies import *
 from setup import *
 from itertools import combinations
+import random
 
 
 def get_applications_running(edge_dictionary):
@@ -37,6 +38,7 @@ def simplify_time(sec):
 
 
 if __name__ == '__main__':
+    #random.seed(1)
     start_time = time.time()  # start timer
 
     num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
@@ -47,7 +49,8 @@ if __name__ == '__main__':
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory)  # generate dictionary with node:server(s) pairs
 
-    location_distances = get_distances(edge_computing_systems)
+    location_distances = get_distances(edge_computing_systems, num_edges)
+    shortest_distances = get_shortest_distances(edge_computing_systems, location_distances, num_edges)
 
     applications = generate_applications(trace_info)  # generate list of application instances
 
@@ -59,22 +62,24 @@ if __name__ == '__main__':
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
     partially_completed_applications = []
-    while len(applications) != 0 or all_servers_empty is False:
+    while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
         print(f'Time = {processing_time}')
 
         applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
                                         processing_time, partially_completed_applications, applications)
+
         complete_applications(edge_computing_systems)
+
         applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
                                         processing_time, partially_completed_applications, applications)
-        start_applications(edge_computing_systems, partially_completed_applications, location_distances)
-        start_applications(edge_computing_systems, applications, location_distances)  # start applications
+        start_applications(edge_computing_systems, partially_completed_applications, shortest_distances)
+        start_applications(edge_computing_systems, applications, None)  # start applications
+
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
+        #print(len(applications), len(partially_completed_applications))
         '''for edge in edge_computing_systems.keys():
-            print(edge.lat, edge.long)
-            print(len(edge.servers))
             for server in edge.servers:
-                print(server, len(server.applications_running))'''
+                print(server, server.on, server.memory, server.cores, server.applications_running)'''
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
