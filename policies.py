@@ -3,13 +3,31 @@ import time
 from operator import attrgetter
 
 
-def start_applications(edge_computing_systems, applications):
+def start_applications(edge_computing_systems, applications, location_distances):
     for edge in edge_computing_systems.keys():  # for each edge computing site...
         for server in edge.servers:  # for each server in a particular edge site
             if server.on is True:
                 for application in list(applications):  # for each application that still needs to run
+                    if application.parent is not None:
+                        print(application.parent.parent, edge)
+                        print(location_distances.keys())
+                        print(len(location_distances.keys()))
+                        try:
+                            x = (location_distances[(edge, application.parent.parent)])
+                            print('zzz')
+                        except KeyError:
+                            pass
+                        try:
+                            y = (location_distances[(application.parent.parent, edge)])
+                            print('qqq')
+                        except KeyError:
+                            pass
+                    if application.parent is None:
+                        print('no parent')  # do stuff below
+
                     if (application.memory <= server.memory) and (application.cores <= server.cores):
                         server.start_application(application)
+                        #print(server.parent, 'PARENT')
                         applications.remove(application)  # remove from to-do list
 
 
@@ -28,7 +46,7 @@ def complete_applications(edge_computing_systems):
 
 
 def shutdown_servers(edge_computing_systems, num_servers, power_per_server,
-                     irradiance_list, processing_time, applications):
+                     irradiance_list, processing_time, partially_completed_applications, applications):
     # determine which servers are on
     for edge in edge_computing_systems.keys():  # start by turning all servers back on
         for server in edge.servers:
@@ -57,5 +75,5 @@ def shutdown_servers(edge_computing_systems, num_servers, power_per_server,
                     for app in list(longest_app.parent.applications_running):
                         longest_app.parent.stop_application(app)
                         application_progression.remove(app)
-                        applications.insert(0, app)
-    return applications
+                        partially_completed_applications.insert(0, app)
+    return applications, partially_completed_applications

@@ -58,19 +58,21 @@ if __name__ == '__main__':
     # ------------------ simulation ----------------
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
-
+    partially_completed_applications = []
     while len(applications) != 0 or all_servers_empty is False:
         processing_time += 1
         print(f'Time = {processing_time}')
 
-        applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
-                                        processing_time, applications)
+        applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
+                                        processing_time, partially_completed_applications, applications)
         complete_applications(edge_computing_systems)
-        applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
-                                        processing_time, applications)
-        start_applications(edge_computing_systems, applications)  # start applications
+        applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
+                                        processing_time, partially_completed_applications, applications)
+        start_applications(edge_computing_systems, partially_completed_applications, location_distances)
+        start_applications(edge_computing_systems, applications, location_distances)  # start applications
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
         '''for edge in edge_computing_systems.keys():
+            print(edge.lat, edge.long)
             print(len(edge.servers))
             for server in edge.servers:
                 print(server, len(server.applications_running))'''

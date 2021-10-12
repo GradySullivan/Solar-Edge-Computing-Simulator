@@ -28,10 +28,10 @@ def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, ser
     # create edge sites
     for edge in range(num_edges):
         latitude, longitude = generate_location('random')
-        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area)
+        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude)
         servers = np.array([])
         for server in range(num_servers):
-            servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory))
+            servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory, edge_site))
         edge_site.servers = servers
         edge_computing_systems[edge_site] = servers
     return edge_computing_systems
@@ -81,6 +81,7 @@ def get_distances(edge_computing_systems):
             loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
             loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2
             location_distances[pair] = gd(loc1, loc2)  # calculate distance between locations in km, add to dictionary
+    print(location_distances)
     return location_distances
 
 

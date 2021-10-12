@@ -1,24 +1,25 @@
 class EdgeSystem:
-    def __init__(self, pv_efficiency, pv_area):
+    def __init__(self, pv_efficiency, pv_area, lat, long):
         self.pv_efficiency = pv_efficiency  # between 0 and 1
         self.pv_area = pv_area  # in m^2
         self.servers = []
-        self.lat = None
-        self.long = None
+        self.lat = lat
+        self.long = long
 
-    def get_server_object(self, cores, memory):
-        return self.Server(cores, memory)
+    def get_server_object(self, cores, memory, edge):
+        return self.Server(cores, memory, edge)
 
     def get_power_generated(self, irradiance):
         # P_n = eta * G_T * A_n
         return self.pv_efficiency * irradiance * self.pv_area
 
     class Server:
-        def __init__(self, cores, memory):
+        def __init__(self, cores, memory, edge):
             self.cores = cores  # per server
             self.memory = memory  # per server, in MB
             self.on = False
             self.applications_running = {}
+            self.parent = edge #FIX THIS
 
         def update_resources(self, decision, app):
             if decision == 'restore':
