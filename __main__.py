@@ -63,20 +63,29 @@ if __name__ == '__main__':
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
     partially_completed_applications = []
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
+        print('apps', len(applications))
+        print('partial', partially_completed_applications)
         processing_time += 1
         print(f'Time = {processing_time}')
 
-        applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
-                                        processing_time, partially_completed_applications, applications)
-
         complete_applications(edge_computing_systems)
         partially_completed_applications = decrement_transfer_time(partially_completed_applications)
+        applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers,
+                                                                          power_per_server, irradiance_list,
+                                                                          processing_time,
+                                                                          partially_completed_applications,
+                                                                          applications)
 
-        applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list,
-                                        processing_time, partially_completed_applications, applications)
         start_applications(edge_computing_systems, partially_completed_applications, shortest_distances)
         start_applications(edge_computing_systems, applications, None)  # start applications
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
+
+        for app in partially_completed_applications:
+            print(app.delay)
+
+
+
+
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
