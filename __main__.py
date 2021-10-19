@@ -78,9 +78,5 @@ if __name__ == '__main__':
         start_applications(edge_computing_systems, applications, None)  # start applications
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
-        #print(len(applications), len(partially_completed_applications))
-        '''for edge in edge_computing_systems.keys():
-            for server in edge.servers:
-                print(server, server.on, server.memory, server.cores, server.applications_running)'''
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer

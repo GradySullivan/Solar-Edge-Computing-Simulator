@@ -12,7 +12,7 @@ def start_applications(edge_computing_systems, applications, shortest_distances)
                         if application.parent is None:
                             server.start_application(application)
                             applications.remove(application)  # remove from to-do list
-                        elif application.parent.parent and None:
+                        elif application.parent.parent and shortest_distances is not None:
                             if server.parent == shortest_distances[edge][0]:  # application is transferring to new node
                                 if application.delay == 0:
                                     print('delay over')
