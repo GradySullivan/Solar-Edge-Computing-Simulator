@@ -19,7 +19,7 @@ class EdgeSystem:
             self.memory = memory  # per server, in MB
             self.on = False
             self.applications_running = {}
-            self.parent = edge #FIX THIS
+            self.parent = edge
 
         def update_resources(self, decision, app):
             if decision == 'restore':

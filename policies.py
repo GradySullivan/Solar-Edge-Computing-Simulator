@@ -12,13 +12,10 @@ def start_applications(edge_computing_systems, applications, shortest_distances)
                         if application.parent is None:
                             server.start_application(application)
                             applications.remove(application)  # remove from to-do list
-                        elif application.parent.parent and (server.parent == shortest_distances[edge][0]
-                                                            or application.parent.parent == edge):
+                        elif application.parent.parent and None:
                             if server.parent == shortest_distances[edge][0]:  # application is transferring to new node
-                                # REVERT TO OLD FUNCTIONALITY BY UNCOMMENTING THE 2 LINES BELOW AND REMOVING NESTED IF/ELIF
-                                #server.start_application(application)
-                                #applications.remove(application)
                                 if application.delay == 0:
+                                    print('delay over')
                                     server.start_application(application)
                                     application.delay = None
                                     applications.remove(application)
@@ -27,11 +24,10 @@ def start_applications(edge_computing_systems, applications, shortest_distances)
                                     print(shortest_distances[edge][1])
                                     application.delay = math.ceil(shortest_distances[edge][1] * .001)
                                     print('delay = ', application.delay)
-
-                            elif application.parent.parent == edge:  # application is resuming on same node
-                                server.start_application(application)
-                                applications.remove(application)
-                                print('cost = 0')
+                        elif application.parent.parent == edge:  # application is resuming on same node
+                            server.start_application(application)
+                            applications.remove(application)
+                            print('cost = 0')
 
 
 def complete_applications(edge_computing_systems):
