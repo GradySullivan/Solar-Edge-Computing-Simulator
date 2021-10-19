@@ -84,6 +84,7 @@ def get_distances(edge_computing_systems, num_edges):
             loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
             loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2
             location_distances[pair] = gd(loc1, loc2).km  # calculate distance between locations in km, add to dictionary
+        print(location_distances)
     return location_distances
 
 

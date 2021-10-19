@@ -37,8 +37,8 @@ def simplify_time(sec):
         print(f'[Simulated Time] {sec} second(s)')
 
 
-if __name__ == '__main__':
-    #random.seed(1)
+def main():
+    random.seed(1)
     start_time = time.time()  # start timer
 
     num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
@@ -61,10 +61,12 @@ if __name__ == '__main__':
     # ------------------ simulation ----------------
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
+    all_servers_empty = False
     partially_completed_applications = []
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         print('apps', len(applications))
-        print('partial', partially_completed_applications)
+        print('partial', len(partially_completed_applications))
+        print(all_servers_empty)
         processing_time += 1
         print(f'Time = {processing_time}')
 
@@ -84,8 +86,9 @@ if __name__ == '__main__':
         for app in partially_completed_applications:
             print(app.delay)
 
-
-
-
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
+
+
+if __name__ == '__main__':
+    main()

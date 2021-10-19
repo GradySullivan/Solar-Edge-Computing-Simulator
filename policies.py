@@ -4,8 +4,26 @@ from operator import attrgetter
 
 
 def start_applications(edge_computing_systems, applications, shortest_distances):
-    for edge in edge_computing_systems.keys():  # for each edge computing site...
-        for server in edge.servers:  # for each server in a particular edge site
+    powered_servers = [server for node in edge_computing_systems.keys() for server in node.servers if server.on is True]
+    for server in powered_servers:
+        for app in list(applications):
+            if (app.memory <= server.memory) and (app.cores <= server.cores):
+                if shortest_distances is None:  # new applications
+                    server.start_application(app)
+                    applications.remove(app)
+                else:  # partially complete
+                    if app.parent.parent == server.parent:  # resume running from same node
+                        server.start_application(app)
+                        applications.remove(app)
+                    elif app.parent.parent == shortest_distances[server.parent][1]:
+                        if app.delay is None:
+                            app.delay = math.ceil(shortest_distances[server.parent][1] * .001)
+                        elif app.delay <= 0:
+                            server.start_application(app)
+                            app.delay = None
+
+    '''for node in edge_computing_systems.keys():  # for each edge computing site...
+        for server in node.servers:  # for each server in a particular edge site
             if server.on is True:
                 for application in list(applications):  # for each application that still needs to run
                     if (application.memory <= server.memory) and (application.cores <= server.cores):
@@ -14,7 +32,7 @@ def start_applications(edge_computing_systems, applications, shortest_distances)
                             server.start_application(application)
                             applications.remove(application)  # remove from to-do list
                         elif application.parent.parent and shortest_distances is not None:
-                            if server.parent == shortest_distances[edge][0]:  # application is transferring to new node
+                            if server.parent == shortest_distances[node][0]:  # application is transferring to new node
                                 if application.delay is not None:
                                     if application.delay <= 0:
                                         print('delay over')
@@ -23,27 +41,22 @@ def start_applications(edge_computing_systems, applications, shortest_distances)
                                         applications.remove(application)
                                 elif application.delay is None:
                                     print('transfer initiated')
-                                    print(shortest_distances[edge][1])
-                                    application.delay = math.ceil(shortest_distances[edge][1] * .001)
+                                    print(shortest_distances[node][1])
+                                    application.delay = math.ceil(shortest_distances[node][1] * .001)
                                     print('delay = ', application.delay)
-                        elif application.parent.parent == edge:  # application is resuming on same node
+                        elif application.parent.parent == node:  # application is resuming on same node
                             print('resume')
                             server.start_application(application)
-                            applications.remove(application)
+                            applications.remove(application)'''
 
 
 def complete_applications(edge_computing_systems):
-    processing = []
-    for edge in edge_computing_systems.keys():  # for each edge computing site...
-        for server in edge.servers:  # for each server in a particular edge site
-            if server.on is True:
-                for application in list(server.applications_running.keys()):  # for each application running...
-                    if application not in processing:  # if the application wasn't added in this time iteration...
-                        application.time_left -= 1
-                        # print(application, 'Time Left', application.time_left)
-                        if application.time_left <= 0:
-                            server.stop_application(application)
-                        processing.append(application)  # to prevent application decrementing multiple times
+    powered_servers = [server for node in edge_computing_systems.keys() for server in node.servers if server.on is True]
+    for server in powered_servers:
+        for application in list(server.applications_running.keys()):
+            application.time_left -= 1
+            if application.time_left <= 0:
+                server.stop_application(application)
 
 
 def shutdown_servers(edge_computing_systems, num_servers, power_per_server,
