@@ -64,9 +64,7 @@ def main():
     all_servers_empty = False
     partially_completed_applications = []
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
-        print('apps', len(applications))
-        print('partial', len(partially_completed_applications))
-        print(all_servers_empty)
+
         processing_time += 1
         print(f'Time = {processing_time}')
 
@@ -82,9 +80,6 @@ def main():
         start_applications(edge_computing_systems, applications, None)  # start applications
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
-
-        for app in partially_completed_applications:
-            print(app.delay)
 
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
