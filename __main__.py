@@ -1,17 +1,20 @@
+import itertools
 import time
-import numpy as np
+import random
 import csv
+import numpy as np
+
 from edge_computing_system import *
 from policies import *
 from setup import *
-from itertools import combinations
-import random
 
+import cProfile
+import pstats
 
 def get_applications_running(edge_dictionary):
-    for server_list in edge_dictionary.values():
-        for server in server_list:
-            if server.applications_running != {}:
+    for node in edge_dictionary.values():
+        for server in node:
+            if server.applications_running:
                 return False
     return True
 
@@ -38,13 +41,11 @@ def simplify_time(sec):
 
 
 def main():
-    random.seed(1)
+    #random.seed(1)
     start_time = time.time()  # start timer
 
     num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
-    trace_info, irradiance_info = config_setup()  # variables configured by config file
-
-    edge_computing_systems = {}  # dictionary: edge_site:servers
+        trace_info, irradiance_info = config_setup()  # variables configured by config file
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory)  # generate dictionary with node:server(s) pairs
@@ -63,6 +64,7 @@ def main():
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
     all_servers_empty = False
     partially_completed_applications = []
+
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
 
         processing_time += 1
@@ -86,4 +88,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    #main()
+
+    with cProfile.Profile() as pr:
+        main()
+
+    stats = pstats.Stats(pr)
+    stats.sort_stats(pstats.SortKey.TIME)
+    stats.print_stats()

@@ -1,10 +1,10 @@
 Config
-Nodes: 3
-Servers per Node: 3
-Cores per Server: 10
-Memory per Server: 4096
+Nodes: 5
+Servers per Node: 10
+Cores per Server: 2000
+Memory per Server: 16500000
 Power per Server Needed: 250
 PV Efficiency: .22
 PV Area: 5
-Traces: traces-2019_test.csv
+Traces: traces-2019.csv
 Irradiance List: irradiance.txt

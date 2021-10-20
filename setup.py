@@ -1,11 +1,8 @@
-import csv
 import random
-import numpy as np
-from __main__ import *
-from edge_computing_system import *
 from geopy.distance import geodesic as gd
-import itertools
-from operator import itemgetter
+import operator
+
+from __main__ import *
 
 
 def config_setup():
@@ -60,6 +57,14 @@ def generate_applications(file):
                 continue
             applications.append(Application(runtime, cores, memory))  # instance for each application
     return applications
+    '''applications = []
+    with open(file, 'r') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        next(csv_reader)  # skip header
+        for row in csv_reader:
+            for i in range(16384):
+                applications.append(Application(int(row[2]), int(row[3]), int(row[5])))
+    return applications'''
 
 
 def generate_irradiance_list(file):
@@ -94,7 +99,7 @@ def get_shortest_distances(edge_computing_systems, location_distances, num_edges
             potential_shortest[key[0]] = location_distances[key]
         else:
             potential_shortest[key[1]] = location_distances[key]
-        shortest_distances[edge] = min(potential_shortest.items(), key=itemgetter(1))
+        shortest_distances[edge] = min(potential_shortest.items(), key=operator.itemgetter(1))
     return shortest_distances
 
 
