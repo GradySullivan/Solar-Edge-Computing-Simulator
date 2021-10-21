@@ -11,20 +11,30 @@ def config_setup():
         reader = csv.reader(file, delimiter=':')
         next(reader)  # skip header
         for line in reader:
+            if line[0] == '--- Node Locations ---':
+                break
             config_info[line[0]] = line[1]
+
+    coords = []  # list of (lat/long) tuples
+    with open('config.txt', 'r') as file:
+        reader = csv.reader(file, delimiter=',')
+        for i in range(12):
+            next(reader)
+        for line in reader:
+            coords.append((line[0], line[1]))
 
     return int(config_info['Nodes']), int(config_info['Servers per Node']), int(config_info['Cores per Server']), \
            int(config_info['Memory per Server']), float(config_info['Power per Server Needed']), \
            float(config_info['PV Efficiency']), float(config_info['PV Area']), config_info['Traces'].strip(), \
-            config_info['Irradiance List'].strip()
+            config_info['Irradiance List'].strip(), config_info['Node Placement'].strip(), coords
 
 
-def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores, server_memory):
+def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores, server_memory, coords, method):
     edge_computing_systems = {}  # dictionary: edge_site:servers
     # create edge sites
     for edge in range(num_edges):
-        latitude, longitude = generate_location('random')
-        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude)
+        latitude, longitude, coords = generate_location(coords, method)
+        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude, edge)
         servers = np.array([])
         for server in range(num_servers):
             servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory, edge_site))
@@ -33,13 +43,18 @@ def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, ser
     return edge_computing_systems
 
 
-def generate_location(method):
+def generate_location(coords, method):
     if method == 'random':
         lat = random.uniform(-90, 90)
         long = random.uniform(-180, 80)
-        return lat, long
+        return lat, long, coords
+    elif method == 'assigned':
+        lat = coords[0][0]
+        long = coords[0][1]
+        coords.remove(coords[0])
+        return lat, long, coords
     else:
-        return None, None
+        return None, None, coords
 
 
 def generate_applications(file):
@@ -51,20 +66,9 @@ def generate_applications(file):
         for row in csv_reader:
             runtime = int(row[2])
             cores = int(row[3])
-            try:
-                memory = int(row[5])
-            except:
-                continue
+            memory = int(row[5])
             applications.append(Application(runtime, cores, memory))  # instance for each application
     return applications
-    '''applications = []
-    with open(file, 'r') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        next(csv_reader)  # skip header
-        for row in csv_reader:
-            for i in range(16384):
-                applications.append(Application(int(row[2]), int(row[3]), int(row[5])))
-    return applications'''
 
 
 def generate_irradiance_list(file):
@@ -73,7 +77,10 @@ def generate_irradiance_list(file):
         txt_reader = csv.reader(txt_file, delimiter=',')
         next(txt_reader)  # skip header
         for row in txt_reader:
-            irr_list.append(float(row[0]))
+            irr_interval = []
+            for value in row:
+                irr_interval.append(float(value))
+            irr_list.append(irr_interval)
     return irr_list
 
 
@@ -93,8 +100,9 @@ def get_distances(edge_computing_systems, num_edges):
 def get_shortest_distances(edge_computing_systems, location_distances, num_edges):
     if num_edges == 1:
         return None
-    potential_shortest, shortest_distances = {}, {}
+    shortest_distances = {}
     for edge, key in itertools.product(edge_computing_systems.keys(), location_distances.keys()):
+        potential_shortest = {}
         if (key[0] == edge or key[1] == edge) and key[0] != edge:
             potential_shortest[key[0]] = location_distances[key]
         else:

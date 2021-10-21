@@ -45,10 +45,10 @@ def main():
     start_time = time.time()  # start timer
 
     num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
-        trace_info, irradiance_info = config_setup()  # variables configured by config file
+        trace_info, irradiance_info, node_placement, coords = config_setup()  # variables configured by config file
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
-                                            server_memory)  # generate dictionary with node:server(s) pairs
+                                            server_memory, coords, node_placement)  # generate dictionary with node:server(s) pairs
 
     location_distances = get_distances(edge_computing_systems, num_edges)
     shortest_distances = get_shortest_distances(edge_computing_systems, location_distances, num_edges)
@@ -71,14 +71,15 @@ def main():
         print(f'Time = {processing_time}')
 
         complete_applications(edge_computing_systems)
-        partially_completed_applications = decrement_transfer_time(partially_completed_applications)
+
         applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers,
                                                                           power_per_server, irradiance_list,
                                                                           processing_time,
                                                                           partially_completed_applications,
                                                                           applications)
 
-        start_applications(edge_computing_systems, partially_completed_applications, shortest_distances)
+        partially_completed_applications = resume_applications(edge_computing_systems, partially_completed_applications, shortest_distances)
+
         start_applications(edge_computing_systems, applications, None)  # start applications
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
@@ -88,11 +89,11 @@ def main():
 
 
 if __name__ == '__main__':
-    #main()
+    main()
 
-    with cProfile.Profile() as pr:
+    '''with cProfile.Profile() as pr:
         main()
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()
+    stats.print_stats()'''
