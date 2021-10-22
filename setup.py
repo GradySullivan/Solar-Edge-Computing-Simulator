@@ -1,7 +1,3 @@
-import random
-from geopy.distance import geodesic as gd
-import operator
-
 from __main__ import *
 
 
