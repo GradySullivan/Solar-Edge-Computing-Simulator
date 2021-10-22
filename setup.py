@@ -7,10 +7,12 @@ from __main__ import *
 
 def config_setup():
     config_info = {}
+    files_lines = 1
     with open('config.txt', 'r') as file:
         reader = csv.reader(file, delimiter=':')
         next(reader)  # skip header
         for line in reader:
+            files_lines += 1
             if line[0] == '--- Node Locations ---':
                 break
             config_info[line[0]] = line[1]
@@ -18,15 +20,12 @@ def config_setup():
     coords = []  # list of (lat/long) tuples
     with open('config.txt', 'r') as file:
         reader = csv.reader(file, delimiter=',')
-        for i in range(12):
+        for i in range(files_lines):
             next(reader)
         for line in reader:
             coords.append((line[0], line[1]))
 
-    return int(config_info['Nodes']), int(config_info['Servers per Node']), int(config_info['Cores per Server']), \
-           int(config_info['Memory per Server']), float(config_info['Power per Server Needed']), \
-           float(config_info['PV Efficiency']), float(config_info['PV Area']), config_info['Traces'].strip(), \
-            config_info['Irradiance List'].strip(), config_info['Node Placement'].strip(), coords
+    return config_info, coords
 
 
 def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores, server_memory, coords, method):

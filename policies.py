@@ -3,13 +3,18 @@ import math
 import operator
 
 
-def start_applications(edge_computing_systems, applications, shortest_distances):
+def start_applications(edge_computing_systems, applications, global_applications):
     if applications is None:
         return
+
     powered_servers = [server for node in edge_computing_systems.keys() for server in node.servers if server.on is True]
     for server in powered_servers:
         for app in list(applications):
-            if (app.memory <= server.memory) and (app.cores <= server.cores) and shortest_distances is None:
+            if (app.memory <= server.memory) and (app.cores <= server.cores) and global_applications is True:
+                server.start_application(app)
+                applications.remove(app)
+                print('started', app, 'from', app.parent, 'on', app.parent.parent)
+            elif (app.memory <= server.memory) and (app.cores <= server.cores) and global_applications is False and server.parent.index == 0:
                 server.start_application(app)
                 applications.remove(app)
                 print('started', app, 'from', app.parent, 'on', app.parent.parent)
@@ -43,6 +48,7 @@ def shutdown_servers(edge_computing_systems, num_servers, power_per_server,
             application_progression = []
             while most_servers_on < servers_on:
                 for server in edge.servers:
+                    ########################################
                     try:
                         application_progression.append(min(list(server.applications_running.keys())))
                     except ValueError:

@@ -11,6 +11,7 @@ from setup import *
 import cProfile
 import pstats
 
+
 def get_applications_running(edge_dictionary):
     for node in edge_dictionary.values():
         for server in node:
@@ -44,8 +45,19 @@ def main():
     #random.seed(1)
     start_time = time.time()  # start timer
 
-    num_edges, num_servers, server_cores, server_memory, power_per_server, edge_pv_efficiency, edge_pv_area, \
-        trace_info, irradiance_info, node_placement, coords = config_setup()  # variables configured by config file
+    # can be changed in config.txt
+    config_info, coords = config_setup()
+    num_edges = int(config_info['Nodes'])
+    num_servers = int(config_info['Servers per Node'])
+    server_cores = int(config_info['Cores per Server'])
+    server_memory = int(config_info['Memory per Server'])
+    power_per_server = float(config_info['Power per Server Needed'])
+    edge_pv_efficiency = float(config_info['PV Efficiency'])
+    edge_pv_area = float(config_info['PV Area'])
+    node_placement = config_info['Node Placement'].strip()
+    global_applications = True if config_info['Global Applications'].strip() == "True" else False
+    trace_info = config_info['Traces'].strip()
+    irradiance_info = config_info['Irradiance List'].strip()
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory, coords, node_placement)  # generate dictionary with node:server(s) pairs
@@ -72,15 +84,12 @@ def main():
 
         complete_applications(edge_computing_systems)
 
-        applications, partially_completed_applications = shutdown_servers(edge_computing_systems, num_servers,
-                                                                          power_per_server, irradiance_list,
-                                                                          processing_time,
-                                                                          partially_completed_applications,
-                                                                          applications)
+        shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list, processing_time,
+                         partially_completed_applications, applications)
 
         partially_completed_applications = resume_applications(edge_computing_systems, partially_completed_applications, shortest_distances)
 
-        start_applications(edge_computing_systems, applications, None)  # start applications
+        start_applications(edge_computing_systems, applications, global_applications)  # start applications
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
