@@ -81,7 +81,6 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
                     if server.applications_running.keys():
                         application_progression.append(min(list(server.applications_running.keys())))
                     else:
-                        print('fail')
                         if server.on is True and server.applications_running == {}:
                             server.on = False
                             servers_on -= 1
