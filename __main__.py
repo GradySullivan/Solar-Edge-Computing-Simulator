@@ -12,15 +12,27 @@ import cProfile
 import pstats
 
 
-def get_applications_running(edge_dictionary):
-    for node in edge_dictionary.values():
-        for server in node:
+def get_applications_running(edge_computing_systems: list):
+    """
+
+    :param edge_computing_systems: list of nodes
+    :return: boolean
+    """
+    """Determines if any servers among any of the nodes are currently running applications"""
+    for node in edge_computing_systems:
+        for server in list(node.servers):
             if server.applications_running:
                 return False
     return True
 
 
-def simplify_time(sec):
+def simplify_time(sec: int):
+    """
+
+    :param sec: simulated seconds for how long it took for applications to complete
+    :return: None
+    """
+    """Converts simulated seconds and converts into minutes, hours, and days for diagnostic printing"""
     day, hr, minute = 0, 0, 0
     if sec >= 60:
         minute = sec // 60
@@ -46,7 +58,7 @@ def main():
     start_time = time.time()  # start timer
 
     # can be changed in config.txt
-    config_info, coords = config_setup()
+    config_info = config_setup()
     num_edges = int(config_info['Nodes'])
     num_servers = int(config_info['Servers per Node'])
     server_cores = int(config_info['Cores per Server'])
@@ -58,18 +70,18 @@ def main():
     global_applications = True if config_info['Global Applications'].strip() == "True" else False
     trace_info = config_info['Traces'].strip()
     irradiance_info = config_info['Irradiance List'].strip()
+    coords = config_info['Coords']
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory, coords, node_placement)  # generate dictionary with node:server(s) pairs
 
-    location_distances = get_distances(edge_computing_systems, num_edges)
-    shortest_distances = get_shortest_distances(edge_computing_systems, location_distances, num_edges)
+    shortest_distances = get_shortest_distances(edge_computing_systems)
 
     applications = generate_applications(trace_info)  # generate list of application instances
 
-    irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiances
+    irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
 
-    check_min_req(applications, edge_computing_systems, server_cores, server_memory)  # prevents infinite loops
+    check_min_req(applications, server_cores, server_memory)  # prevents infinite loops
 
     # ------------------ simulation ----------------
 
@@ -84,10 +96,10 @@ def main():
 
         complete_applications(edge_computing_systems)
 
-        shutdown_servers(edge_computing_systems, num_servers, power_per_server, irradiance_list, processing_time,
-                         partially_completed_applications, applications)
+        partially_completed_applications = shutdown_servers(edge_computing_systems, power_per_server, irradiance_list,
+                                                            processing_time, partially_completed_applications)
 
-        partially_completed_applications = resume_applications(edge_computing_systems, partially_completed_applications, shortest_distances)
+        partially_completed_applications = resume_applications(partially_completed_applications, shortest_distances)
 
         start_applications(edge_computing_systems, applications, global_applications)  # start applications
 

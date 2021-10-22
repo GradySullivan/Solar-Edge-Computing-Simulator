@@ -6,6 +6,11 @@ from __main__ import *
 
 
 def config_setup():
+    """
+
+    :return: config_info: dictionary containing parameter:value pairs
+    """
+    """Converts parameters from config.txt into a dictionary for the simulator to reference when needed"""
     config_info = {}
     files_lines = 1
     with open('config.txt', 'r') as file:
@@ -24,12 +29,27 @@ def config_setup():
             next(reader)
         for line in reader:
             coords.append((line[0], line[1]))
+    config_info['Coords'] = coords
 
-    return config_info, coords
+    return config_info
 
 
-def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores, server_memory, coords, method):
-    edge_computing_systems = {}  # dictionary: edge_site:servers
+def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, edge_pv_area: float, server_cores: int,
+                   server_memory: int, coords: list, method: str):
+    """
+
+    :param num_edges: number of nodes in the edge computing system
+    :param num_servers: number of servers per node
+    :param edge_pv_efficiency: efficiency of the PV cells
+    :param edge_pv_area: area of solar panels
+    :param server_cores: number of cores per server
+    :param server_memory: amount of memory per core, in MB
+    :param coords: coordinates of nodes
+    :param method: algorithm to determine how nodes will be generated
+    :return: edge_computing_systems (list of nodes)
+    """
+    """ Initialize nodes for edge computing system """
+    edge_computing_systems = []  # dictionary: node:servers
     # create edge sites
     for edge in range(num_edges):
         latitude, longitude, coords = generate_location(coords, method)
@@ -38,11 +58,18 @@ def generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, ser
         for server in range(num_servers):
             servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory, edge_site))
         edge_site.servers = servers
-        edge_computing_systems[edge_site] = servers
+        edge_computing_systems.append(edge_site)
     return edge_computing_systems
 
 
-def generate_location(coords, method):
+def generate_location(coords: list, method: str):
+    """
+
+    :param coords: (latitude, longitude) tuples
+    :param method: determines which location generation algorithm to choose
+    :return: a single latitude, longitude, and updated coords list
+    """
+    """Helper function which gets lat/long pairs for nodes"""
     if method == 'random':
         lat = random.uniform(-90, 90)
         long = random.uniform(-180, 80)
@@ -56,7 +83,13 @@ def generate_location(coords, method):
         return None, None, coords
 
 
-def generate_applications(file):
+def generate_applications(file: str):
+    """
+
+    :param file: csv file containing applications
+    :return: applications (list of applications)
+    """
+    """Convert application information from file into a list"""
     # create applications
     applications = []  # initialize list of class instances
     with open(file, 'r') as csv_file:
@@ -70,7 +103,13 @@ def generate_applications(file):
     return applications
 
 
-def generate_irradiance_list(file):
+def generate_irradiance_list(file: str):
+    """
+
+    :param file: text file containing irradiance values for each time period
+    :return: irr_list (list of tuples containing irradiance values for each node
+    """
+    """Convert solar irradiance information from file into a list"""
     irr_list = []
     with open(file, 'r') as txt_file:
         txt_reader = csv.reader(txt_file, delimiter=',')
@@ -83,8 +122,14 @@ def generate_irradiance_list(file):
     return irr_list
 
 
-def get_distances(edge_computing_systems, num_edges):
-    if num_edges == 1:
+def get_distances(edge_computing_systems: list):
+    """
+
+    :param edge_computing_systems: list of nodes
+    :return: location_distances (dictionary of (loc1,loc2):distance pairs)
+    """
+    """Helper function to calculate distances between each node"""
+    if len(edge_computing_systems) == 1:
         return None
     location_distances = {}  # dictionary lookup table; (loc1, loc2): distance
     if len(edge_computing_systems) > 1:  # only does if more than one node
@@ -96,11 +141,19 @@ def get_distances(edge_computing_systems, num_edges):
     return location_distances
 
 
-def get_shortest_distances(edge_computing_systems, location_distances, num_edges):
-    if num_edges == 1:
+def get_shortest_distances(edge_computing_systems: list):
+    """
+
+    :param edge_computing_systems: list of nodes
+    :param location_distances: dictionary of (loc1,loc2):distance pairs
+    :return: shortest_distances (dictionary of node:(closest node,distance) pairs)
+    """
+    """For each node, determines the nearest neighboring node"""
+    if len(edge_computing_systems) == 1:
         return None
+    location_distances = get_distances(edge_computing_systems)
     shortest_distances = {}
-    for edge, key in itertools.product(edge_computing_systems.keys(), location_distances.keys()):
+    for edge, key in itertools.product(edge_computing_systems, location_distances.keys()):
         potential_shortest = {}
         if (key[0] == edge or key[1] == edge) and key[0] != edge:
             potential_shortest[key[0]] = location_distances[key]
@@ -110,15 +163,21 @@ def get_shortest_distances(edge_computing_systems, location_distances, num_edges
     return shortest_distances
 
 
-def check_min_req(application_list, edge_sites, server_cores, server_memory):
-    max_cores, max_memory = 0, 0
+def check_min_req(application_list: list, server_cores: int, server_memory: int):
+    """
 
+    :param application_list: list of applications
+    :param server_cores: cores per server
+    :param server_memory: memory per server, in MB
+    :return: None
+    """
+    """Determines if provided resources can support the application load"""
+    max_cores, max_memory = 0, 0
     for app in application_list:
         if app.cores > max_cores:
             max_cores = app.cores
         if app.memory > max_memory:
             max_memory = app.memory
-
     if max_cores > server_cores and max_memory > server_memory:
         print(f'Allotted {server_cores} core(s) per server. Minimum of {max_cores} required')
         print(f'Allotted {server_memory} MB of memory per server. Minimum of {max_memory} MB required')
