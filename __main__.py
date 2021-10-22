@@ -74,7 +74,7 @@ def main():
     coords = config_info['Coords']
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
-                                            server_memory, coords, node_placement)  # generate dictionary with node:server(s) pairs
+                                            server_memory, coords, node_placement)
 
     shortest_distances = get_shortest_distances(edge_computing_systems)
 
