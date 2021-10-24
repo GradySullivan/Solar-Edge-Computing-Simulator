@@ -3,6 +3,7 @@ Nodes: 3
 Servers per Node: 1
 Cores per Server: 10
 Memory per Server: 4096
+Battery Size: 10000
 Power per Server Needed: 250
 PV Efficiency: .22
 PV Area: 5

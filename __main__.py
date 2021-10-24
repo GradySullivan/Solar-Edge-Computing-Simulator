@@ -64,6 +64,7 @@ def main():
     num_servers = int(config_info['Servers per Node'])
     server_cores = int(config_info['Cores per Server'])
     server_memory = int(config_info['Memory per Server'])
+    battery = float(config_info['Battery Size'])  # measured in Watt-hours
     power_per_server = float(config_info['Power per Server Needed'])
     edge_pv_efficiency = float(config_info['PV Efficiency'])
     edge_pv_area = float(config_info['PV Area'])
@@ -74,7 +75,7 @@ def main():
     coords = config_info['Coords']
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
-                                            server_memory, coords, node_placement)
+                                            server_memory, battery, coords, node_placement)
 
     shortest_distances = get_shortest_distances(edge_computing_systems)
 
@@ -84,7 +85,7 @@ def main():
 
     check_min_req(applications, server_cores, server_memory)  # prevents infinite loops
 
-    # ------------------ simulation ----------------
+    # ---------------- simulation ----------------
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
     all_servers_empty = False
@@ -97,12 +98,14 @@ def main():
 
         complete_applications(edge_computing_systems)
 
-        partially_completed_applications = shutdown_servers(edge_computing_systems, power_per_server, irradiance_list,
-                                                            processing_time, partially_completed_applications)
+        shutdown_servers(edge_computing_systems, power_per_server, irradiance_list, processing_time,
+                         partially_completed_applications)
 
-        partially_completed_applications = resume_applications(partially_completed_applications, shortest_distances)
+        resume_applications(partially_completed_applications, shortest_distances)
 
         start_applications(edge_computing_systems, applications, global_applications)  # start applications
+
+        update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 

@@ -31,7 +31,7 @@ def config_setup():
 
 
 def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, edge_pv_area: float, server_cores: int,
-                   server_memory: int, coords: list, method: str):
+                   server_memory: int, battery: float, coords: list, method: str):
     """
 
     :param num_edges: number of nodes in the edge computing system
@@ -45,11 +45,11 @@ def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, 
     :return: edge_computing_systems (list of nodes)
     """
     """ Initialize nodes for edge computing system """
-    edge_computing_systems = []  # dictionary: node:servers
+    edge_computing_systems = []
     # create edge sites
     for edge in range(num_edges):
         latitude, longitude, coords = generate_location(coords, method)
-        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude, edge)
+        edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude, battery, edge)
         servers = np.array([])
         for server in range(num_servers):
             servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory, edge_site))
@@ -103,7 +103,7 @@ def generate_irradiance_list(file: str):
     """
 
     :param file: text file containing irradiance values for each time period
-    :return: irr_list (list of tuples containing irradiance values for each node
+    :return: irr_list (list of lists containing irradiance values for each node
     """
     """Convert solar irradiance information from file into a list"""
     irr_list = []
