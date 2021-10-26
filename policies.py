@@ -25,7 +25,7 @@ def start_applications(edge_computing_systems: list, applications: list, global_
                     and server.parent.index == 0:
                 server.start_application(app)
                 applications.remove(app)
-                print('started', app, 'from', app.parent, 'on', app.parent.parent)
+                #print('started', app, 'from', app.parent, 'on', app.parent.parent)
 
 
 def complete_applications(edge_computing_systems: list):
@@ -72,7 +72,7 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
     for edge in edge_computing_systems:
         servers_on = len(edge.servers)
         power = edge.get_power_generated(irradiance_list[processing_time][edge.index])  # update power available
-        print(f'Power {edge.index}: {power}')
+        #print(f'Power {edge.index}: {power}')
         battery_power = edge.current_battery
         power_consumed = power + battery_power
         most_servers_on = math.floor((power + battery_power) / power_per_server)
@@ -80,7 +80,7 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
             application_progression = []
             while most_servers_on < servers_on:
                 for server in edge.servers:
-                    if server.applications_running.keys():
+                    if server.applications_running.keys() and application_progression:
                         application_progression.append(min(list(server.applications_running.keys())))
                     else:
                         if server.on is True and server.applications_running == {}:
@@ -97,11 +97,12 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
                         longest_app.parent.stop_application(app)
                         application_progression.remove(app)
                         partially_completed_applications.insert(0, app)
-                        print('pausing', app, app.time_left, 'on', app.parent.parent)
+                        #print('pausing', app, app.time_left, 'on', app.parent.parent)
             if power_consumed > power:
                 edge.current_battery = power_consumed - power - battery_power
 
-def resume_applications(applications: list, shortest_distances: dict):
+
+def resume_applications(applications: list, shortest_distances: dict, cost_multiplier: float):
     """
 
     :param applications: list of applications
@@ -111,18 +112,26 @@ def resume_applications(applications: list, shortest_distances: dict):
     for app in applications:
         for server in shortest_distances[app.parent.parent][0].servers:
             if app.delay is None:
-                app.delay = math.ceil(shortest_distances[server.parent][1] * .001)
+                app.delay = math.ceil(shortest_distances[server.parent][1] * cost_multiplier)
             elif app.delay > 0:
                 app.delay -= 1
             if app.delay <= 0 and server.on is True and app.cores <= server.cores and app.memory <= server.memory:
-                print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
+                #print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
                 server.start_application(app)
                 applications.remove(app)
 
 
 def update_batteries(edge_computing_systems: list, power_per_server: float, irradiance_list: list,
                      processing_time: int):
+    """
 
+    :param edge_computing_systems: list of nodes
+    :param power_per_server: power each server consumes
+    :param irradiance_list: list of solar irradiance lists
+    :param processing_time: simulated time
+    :return: None
+    """
+    """Adds power to node's battery if not used in this time period"""
     # power off servers without applications running
     for node in edge_computing_systems:
         for server in node.servers:
@@ -139,4 +148,4 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
             node.current_battery += power
         else:
             node.current_battery = node.max_battery
-        print(f'Battery {node.index}: {node.current_battery}')
+        #print(f'Battery {node.index}: {node.current_battery}')

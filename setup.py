@@ -34,6 +34,7 @@ def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, 
                    server_memory: int, battery: float, coords: list, method: str):
     """
 
+    :param battery: amount of energy that can be stored
     :param num_edges: number of nodes in the edge computing system
     :param num_servers: number of servers per node
     :param edge_pv_efficiency: efficiency of the PV cells
@@ -92,10 +93,13 @@ def generate_applications(file: str):
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)  # skip header
         for row in csv_reader:
-            runtime = int(row[2])
-            cores = int(row[3])
-            memory = int(row[5])
-            applications.append(Application(runtime, cores, memory))  # instance for each application
+            try:
+                runtime = int(row[2])
+                cores = int(row[3])
+                memory = int(row[5])
+                applications.append(Application(runtime, cores, memory))  # instance for each application
+            except:
+                pass
     return applications
 
 

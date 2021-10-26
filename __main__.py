@@ -68,6 +68,7 @@ def main():
     power_per_server = float(config_info['Power per Server Needed'])
     edge_pv_efficiency = float(config_info['PV Efficiency'])
     edge_pv_area = float(config_info['PV Area'])
+    cost_multiplier = float(config_info['Cost Multiplier'])
     node_placement = config_info['Node Placement'].strip()
     global_applications = True if config_info['Global Applications'].strip() == "True" else False
     trace_info = config_info['Traces'].strip()
@@ -80,6 +81,8 @@ def main():
     shortest_distances = get_shortest_distances(edge_computing_systems)
 
     applications = generate_applications(trace_info)  # generate list of application instances
+    total_applications = len(applications)
+    print(f'TOTAL APPLICATIONS: {total_applications}')
 
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
 
@@ -95,17 +98,19 @@ def main():
 
         processing_time += 1
         print(f'Time = {processing_time}')
+        print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
 
         complete_applications(edge_computing_systems)
 
         shutdown_servers(edge_computing_systems, power_per_server, irradiance_list, processing_time,
                          partially_completed_applications)
 
-        resume_applications(partially_completed_applications, shortest_distances)
+        resume_applications(partially_completed_applications, shortest_distances, cost_multiplier)
 
         start_applications(edge_computing_systems, applications, global_applications)  # start applications
 
-        update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
+        if battery > 0:
+            update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
@@ -114,11 +119,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    #main()
 
-    '''with cProfile.Profile() as pr:
+    with cProfile.Profile() as pr:
         main()
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()'''
+    stats.print_stats()
