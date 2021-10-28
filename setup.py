@@ -69,7 +69,7 @@ def generate_location(coords: list, method: str):
     """Helper function which gets lat/long pairs for nodes"""
     if method == 'random':
         lat = random.uniform(-90, 90)
-        long = random.uniform(-180, 80)
+        long = random.uniform(-180, 180)
         return lat, long, coords
     elif method == 'assigned':
         lat = coords[0][0]
@@ -150,7 +150,8 @@ def get_shortest_distances(edge_computing_systems: list):
     """
     """For each node, determines the nearest neighboring node"""
     if len(edge_computing_systems) == 1:
-        return None
+        shortest_distance = {edge_computing_systems[0]: (edge_computing_systems[0], 0)}
+        return shortest_distance
     location_distances = get_distances(edge_computing_systems)
     shortest_distances = {}
     for edge, key in itertools.product(edge_computing_systems, location_distances.keys()):

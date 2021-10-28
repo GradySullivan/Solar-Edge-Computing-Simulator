@@ -38,8 +38,8 @@ class EdgeSystem:
             application.parent = self
 
         def stop_application(self, application: object):
-            '''if application.time_left == 0:
-                print('completed', application, 'at', application.parent)'''
+            if application.time_left == 0:
+                print('completed', application, 'at', application.parent)
             self.update_resources('restore', application)
             del self.applications_running[application]  # delete from applications list if completed
 
