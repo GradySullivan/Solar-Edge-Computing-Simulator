@@ -98,7 +98,7 @@ def main():
 
         processing_time += 1
         print(f'Time = {processing_time}')
-        #print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
+        print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
 
         complete_applications(edge_computing_systems)
 
@@ -107,7 +107,8 @@ def main():
 
         resume_applications(partially_completed_applications, shortest_distances, cost_multiplier)
 
-        start_applications(edge_computing_systems, applications, global_applications)  # start applications
+        if applications:
+            start_applications(edge_computing_systems, applications, global_applications)  # start applications
 
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
@@ -119,11 +120,11 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    #main()
 
-    '''with cProfile.Profile() as pr:
+    with cProfile.Profile() as pr:
         main()
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()'''
+    stats.print_stats()

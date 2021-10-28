@@ -107,7 +107,7 @@ def generate_irradiance_list(file: str):
     """
 
     :param file: text file containing irradiance values for each time period
-    :return: irr_list (list of lists containing irradiance values for each node
+    :return: irr_list (tuple of tuples containing irradiance values for each node
     """
     """Convert solar irradiance information from file into a list"""
     irr_list = []
@@ -118,8 +118,8 @@ def generate_irradiance_list(file: str):
             irr_interval = []
             for value in row:
                 irr_interval.append(float(value))
-            irr_list.append(irr_interval)
-    return irr_list
+            irr_list.append(tuple(irr_interval))
+    return tuple(irr_list)
 
 
 def get_distances(edge_computing_systems: list):
@@ -133,7 +133,7 @@ def get_distances(edge_computing_systems: list):
         return None
     location_distances = {}  # dictionary lookup table; (loc1, loc2): distance
     if len(edge_computing_systems) > 1:  # only does if more than one node
-        combos = itertools.combinations(edge_computing_systems, 2)  # every combination of two nodes
+        combos = combinations(edge_computing_systems, 2)  # every combination of two nodes
         for pair in combos:
             loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
             loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2

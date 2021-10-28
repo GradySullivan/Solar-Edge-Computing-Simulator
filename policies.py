@@ -11,8 +11,6 @@ def start_applications(edge_computing_systems: list, applications: list, global_
     :return: None
     """
     """Start applications on a server for the first time"""
-    if applications is None:
-        return
     powered_servers = [server for node in edge_computing_systems for server in node.servers if server.on is True]
     for server in powered_servers:
         for app in list(applications):
@@ -25,7 +23,7 @@ def start_applications(edge_computing_systems: list, applications: list, global_
                     and server.parent.index == 0:
                 server.start_application(app)
                 applications.remove(app)
-                print('started', app, 'from', app.parent, 'on', app.parent.parent)
+                # print('started', app, 'from', app.parent, 'on', app.parent.parent)
 
 
 def complete_applications(edge_computing_systems: list):
@@ -55,13 +53,13 @@ def power_servers(edge_computing_systems: list):
         server.on = True
 
 
-def shutdown_servers(edge_computing_systems: list, power_per_server: float, irradiance_list: list, processing_time: int,
+def shutdown_servers(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple, processing_time: int,
                      partially_completed_applications: list):
     """
 
        :param edge_computing_systems: list of nodes
        :param power_per_server: power that each server needs to operate, in W
-       :param irradiance_list: list of irradiance values for each node
+       :param irradiance_list: tuple of irradiance values for each node
        :param processing_time: simulated time, in seconds
        :param partially_completed_applications: list of applications that have been paused
        :return: None
@@ -96,7 +94,7 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
                         longest_app.parent.stop_application(app)
                         application_progression.remove(app)
                         partially_completed_applications.insert(0, app)
-                        print('pausing', app, app.time_left, 'on', app.parent.parent)
+                        # print('pausing', app, app.time_left, 'on', app.parent.parent)
             if power_consumed > power:
                 edge.current_battery = power_consumed - power - battery_power
 
@@ -122,13 +120,13 @@ def resume_applications(applications: list, shortest_distances: dict, cost_multi
                 break
 
 
-def update_batteries(edge_computing_systems: list, power_per_server: float, irradiance_list: list,
+def update_batteries(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple,
                      processing_time: int):
     """
 
     :param edge_computing_systems: list of nodes
     :param power_per_server: power each server consumes
-    :param irradiance_list: list of solar irradiance lists
+    :param irradiance_list: tuple of solar irradiance lists
     :param processing_time: simulated time
     :return: None
     """

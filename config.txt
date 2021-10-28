@@ -1,8 +1,8 @@
 Config
 Nodes: 1
-Servers per Node: 1
-Cores per Server: 1
-Memory per Server: 4096
+Servers per Node: 225
+Cores per Server: 320
+Memory per Server: 655460
 Battery Size: 0
 Power per Server Needed: 250
 PV Efficiency: .22
