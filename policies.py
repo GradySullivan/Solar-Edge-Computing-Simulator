@@ -37,7 +37,7 @@ def complete_applications(edge_computing_systems: list):
     """Removes applications from servers once they finish running"""
     powered_servers = [server for node in edge_computing_systems for server in node.servers if server.on is True]
     for server in powered_servers:
-        for application in list(server.applications_running.keys()):
+        for application in list(server.applications_running):
             application.time_left -= 1
             if application.time_left <= 0:
                 server.stop_application(application)
@@ -80,8 +80,8 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
             application_progression = []
             while most_servers_on < servers_on:
                 for server in edge.servers:
-                    if server.applications_running.keys():
-                        application_progression.append(min(list(server.applications_running.keys())))
+                    if server.applications_running:
+                        application_progression.append(min(list(server.applications_running)))
                     else:
                         if server.on is True and server.applications_running == {}:
                             server.on = False
