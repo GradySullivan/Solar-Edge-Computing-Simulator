@@ -51,9 +51,9 @@ def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, 
     for edge in range(num_edges):
         latitude, longitude, coords = generate_location(coords, method)
         edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude, battery, edge)
-        servers = np.array([])
+        servers = []
         for server in range(num_servers):
-            servers = np.append(servers, edge_site.get_server_object(server_cores, server_memory, edge_site))
+            servers.append(edge_site.get_server_object(server_cores, server_memory, edge_site))
         edge_site.servers = servers
         edge_computing_systems.append(edge_site)
     return edge_computing_systems
@@ -133,7 +133,7 @@ def get_distances(edge_computing_systems: list):
         return None
     location_distances = {}  # dictionary lookup table; (loc1, loc2): distance
     if len(edge_computing_systems) > 1:  # only does if more than one node
-        combos = combinations(edge_computing_systems, 2)  # every combination of two nodes
+        combos = itertools.combinations(edge_computing_systems, 2)  # every combination of two nodes
         for pair in combos:
             loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
             loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2

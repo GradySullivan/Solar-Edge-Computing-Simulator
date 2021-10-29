@@ -2,7 +2,6 @@ import itertools
 import time
 import random
 import csv
-import numpy as np
 from geopy.distance import geodesic as gd
 
 from edge_computing_system import *
