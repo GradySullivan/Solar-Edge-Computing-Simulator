@@ -112,13 +112,11 @@ def resume_applications(applications: list, shortest_distances: dict, cost_multi
     :return: None
     """
     for app in list(applications):
-        print(app)
         if app.delay is None:
             app.delay = math.ceil(shortest_distances[app.parent.parent][1] * cost_multiplier)
         elif app.delay > 0:
             app.delay -= 1
         for server in shortest_distances[app.parent.parent][0].servers:
-            print('i')
             if app.delay <= 0 and server.on is True and app.cores <= server.cores and app.memory <= server.memory:
                 print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
                 server.start_application(app)
