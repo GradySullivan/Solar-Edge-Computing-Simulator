@@ -138,7 +138,7 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
     # power off servers without applications running
     for node in edge_computing_systems:
         for server in node.servers:
-            if server.on is True and server.applications_running == {}:
+            if server.on is True and not server.applications_running:
                 server.on = False
 
     # calculate leftover power per node
@@ -151,4 +151,4 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
             node.current_battery += power
         else:
             node.current_battery = node.max_battery
-        # print(f'Battery {node.index}: {node.current_battery}')
+        print(f'Battery {node.index}: {node.current_battery}')

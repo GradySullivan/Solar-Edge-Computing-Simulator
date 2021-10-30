@@ -119,11 +119,11 @@ def main():
 
 
 if __name__ == '__main__':
-    #main()
+    main()
 
-    with cProfile.Profile() as pr:
+    '''with cProfile.Profile() as pr:
         main()
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()
+    stats.print_stats()'''
