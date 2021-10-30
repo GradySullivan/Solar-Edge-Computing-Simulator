@@ -94,10 +94,7 @@ def generate_applications(file: str):
         next(csv_reader)  # skip header
         for row in csv_reader:
             try:
-                runtime = int(row[2])
-                cores = int(row[3])
-                memory = int(row[5])
-                applications.append(Application(runtime, cores, memory))  # instance for each application
+                applications.append(Application(int(row[2]), int(row[3]), int(row[5])))  # instance for each application
             except:
                 pass
     return applications

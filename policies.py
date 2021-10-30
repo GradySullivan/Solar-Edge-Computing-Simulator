@@ -11,9 +11,9 @@ def start_applications(edge_computing_systems: list, applications: list, global_
     :return: None
     """
     """Start applications on a server for the first time"""
-    powered_servers = [server for node in edge_computing_systems for server in node.servers if server.on is True]
+    powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
     for server in powered_servers:
-        for app in list(applications):
+        for app in applications:
             '''To start an application, the server must have enough memory and cores. If this is fulfilled,
                 an application will run based on the global_applications value. If true, applications are considered
                 global and can start from any node. If false, applications must start from the a server whose node's 
@@ -33,9 +33,9 @@ def complete_applications(edge_computing_systems: list):
     :return: None
     """
     """Removes applications from servers once they finish running"""
-    powered_servers = [server for node in edge_computing_systems for server in node.servers if server.on is True]
+    powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
     for server in powered_servers:
-        for application in list(server.applications_running):
+        for application in server.applications_running:
             application.time_left -= 1
             if application.time_left <= 0:
                 server.stop_application(application)
@@ -48,13 +48,13 @@ def power_servers(edge_computing_systems: list):
     :return: None
     """
     """Helper function that turns on all servers"""
-    powered_servers = [server for edge in edge_computing_systems for server in edge.servers]
+    powered_servers = (server for edge in edge_computing_systems for server in edge.servers)
     for server in powered_servers:
         server.on = True
 
 
-def shutdown_servers(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple, processing_time: int,
-                     partially_completed_applications: list):
+def shutdown_servers(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple,
+                     processing_time: int, partially_completed_applications: list):
     """
 
        :param edge_computing_systems: list of nodes
@@ -79,7 +79,7 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
             while most_servers_on < servers_on:
                 for server in edge.servers:
                     if server.applications_running:
-                        application_progression.append(min(list(server.applications_running)))
+                        application_progression.append(min(server.applications_running))
                     else:
                         if server.on is True and server.applications_running == {}:
                             server.on = False
@@ -90,7 +90,7 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
                     longest_app = max(application_progression, key=operator.attrgetter('time_left'))
                     longest_app.parent.on = False
                     servers_on -= 1
-                    for app in list(longest_app.parent.applications_running):
+                    for app in longest_app.parent.applications_running:
                         longest_app.parent.stop_application(app)
                         application_progression.remove(app)
                         partially_completed_applications.insert(0, app)
