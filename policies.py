@@ -91,16 +91,16 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
                         break
                 else:
                     shortest_apps.append(min(server.applications_running))
-                for app in sorted(shortest_apps,
-                                          key=operator.attrgetter('time_left'))[most_servers_on - servers_on:]:
-                    app.parent.on = False
-                    servers_on -= 1
-                    max_power_available -= power_per_server
-                    for running_app in app.parent.applications_running:
-                        app.parent.stop_application(running_app)
-                        shortest_apps.remove(running_app)
-                        partially_completed_applications.insert(0, running_app)
-                        print('pausing', running_app, running_app.time_left, 'on', running_app.parent.parent)
+            for app in sorted(shortest_apps,
+                                      key=operator.attrgetter('time_left'))[most_servers_on - servers_on:]:
+                app.parent.on = False
+                servers_on -= 1
+                max_power_available -= power_per_server
+                for running_app in app.parent.applications_running:
+                    app.parent.stop_application(running_app)
+                    shortest_apps.remove(running_app)
+                    partially_completed_applications.insert(0, running_app)
+                    print('pausing', running_app, running_app.time_left, 'on', running_app.parent.parent)
 
 
 def resume_applications(applications: list, shortest_distances: dict, cost_multiplier: float):
