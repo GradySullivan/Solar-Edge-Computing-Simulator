@@ -49,12 +49,10 @@ def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, 
     edge_computing_systems = []
     # create edge sites
     for edge in range(num_edges):
-        latitude, longitude, coords = generate_location(coords, method)
+        latitude, longitude = generate_location(coords, method)
         edge_site = EdgeSystem(edge_pv_efficiency, edge_pv_area, latitude, longitude, battery, edge)
-        servers = []
-        for server in range(num_servers):
-            servers.append(edge_site.get_server_object(server_cores, server_memory, edge_site))
-        edge_site.servers = servers
+        edge_site.servers = [edge_site.get_server_object(server_cores, server_memory, edge_site) for _
+                             in range(num_servers)]
         edge_computing_systems.append(edge_site)
     return edge_computing_systems
 
@@ -64,20 +62,20 @@ def generate_location(coords: list, method: str):
 
     :param coords: (latitude, longitude) tuples
     :param method: determines which location generation algorithm to choose
-    :return: a single latitude, longitude, and updated coords list
+    :return: a single latitude, longitude
     """
     """Helper function which gets lat/long pairs for nodes"""
     if method == 'random':
         lat = random.uniform(-90, 90)
         long = random.uniform(-180, 180)
-        return lat, long, coords
+        return lat, long
     elif method == 'assigned':
         lat = coords[0][0]
         long = coords[0][1]
         coords.remove(coords[0])
-        return lat, long, coords
+        return lat, long
     else:
-        return None, None, coords
+        return None, None
 
 
 def generate_applications(file: str):
@@ -142,7 +140,6 @@ def get_shortest_distances(edge_computing_systems: list):
     """
 
     :param edge_computing_systems: list of nodes
-    :param location_distances: dictionary of (loc1,loc2):distance pairs
     :return: shortest_distances (dictionary of node:(closest node,distance) pairs)
     """
     """For each node, determines the nearest neighboring node"""
