@@ -37,7 +37,6 @@ def complete_applications(edge_computing_systems: list):
     for server in powered_servers:
         for application in list(server.applications_running):
             application.time_left -= 1
-            print(application.time_left)
             if application.time_left <= 0:
                 server.stop_application(application)
 
