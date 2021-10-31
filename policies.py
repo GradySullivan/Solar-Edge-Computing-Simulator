@@ -13,7 +13,7 @@ def start_applications(edge_computing_systems: list, applications: list, global_
     """Start applications on a server for the first time"""
     powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
     for server in powered_servers:
-        for app in applications:
+        for app in list(applications):
             '''To start an application, the server must have enough memory and cores. If this is fulfilled,
                 an application will run based on the global_applications value. If true, applications are considered
                 global and can start from any node. If false, applications must start from the a server whose node's 
@@ -35,8 +35,9 @@ def complete_applications(edge_computing_systems: list):
     """Removes applications from servers once they finish running"""
     powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
     for server in powered_servers:
-        for application in server.applications_running:
+        for application in list(server.applications_running):
             application.time_left -= 1
+            print(application.time_left)
             if application.time_left <= 0:
                 server.stop_application(application)
 
