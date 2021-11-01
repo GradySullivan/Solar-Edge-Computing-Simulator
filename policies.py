@@ -11,9 +11,7 @@ def start_applications(edge_computing_systems: list, applications: list, global_
     :return: None
     """
     """Start applications on a server for the first time"""
-    if applications is None:
-        return
-    powered_servers = [server for node in edge_computing_systems for server in node.servers if server.on is True]
+    powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
     for server in powered_servers:
         for app in list(applications):
             '''To start an application, the server must have enough memory and cores. If this is fulfilled,
@@ -25,7 +23,7 @@ def start_applications(edge_computing_systems: list, applications: list, global_
                     and server.parent.index == 0:
                 server.start_application(app)
                 applications.remove(app)
-                #print('started', app, 'from', app.parent, 'on', app.parent.parent)
+                print('started', app, 'from', app.parent, 'on', app.parent.parent)
 
 
 def complete_applications(edge_computing_systems: list):
@@ -35,9 +33,9 @@ def complete_applications(edge_computing_systems: list):
     :return: None
     """
     """Removes applications from servers once they finish running"""
-    powered_servers = [server for node in edge_computing_systems for server in node.servers if server.on is True]
+    powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
     for server in powered_servers:
-        for application in list(server.applications_running.keys()):
+        for application in list(server.applications_running):
             application.time_left -= 1
             if application.time_left <= 0:
                 server.stop_application(application)
@@ -50,84 +48,96 @@ def power_servers(edge_computing_systems: list):
     :return: None
     """
     """Helper function that turns on all servers"""
-    powered_servers = [server for edge in edge_computing_systems for server in edge.servers]
+    powered_servers = (server for edge in edge_computing_systems for server in edge.servers)
     for server in powered_servers:
         server.on = True
 
 
-def shutdown_servers(edge_computing_systems: list, power_per_server: float, irradiance_list: list, processing_time: int,
-                     partially_completed_applications: list):
+def shutdown_servers(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple,
+                     processing_time: int, partially_completed_applications: list):
     """
 
-    :param edge_computing_systems: list of nodes
-    :param power_per_server: power that each server needs to operate, in W
-    :param irradiance_list: list of irradiance values for each node
-    :param processing_time: simulated time, in seconds
-    :param partially_completed_applications: list of applications that have been paused
-    :return: None
-    """
+       :param edge_computing_systems: list of nodes
+       :param power_per_server: power that each server needs to operate, in W
+       :param irradiance_list: tuple of irradiance values for each node
+       :param processing_time: simulated time, in seconds
+       :param partially_completed_applications: list of applications that have been paused
+       :return: None
+       """
     """Determines which servers to power off"""
     power_servers(edge_computing_systems)
     # turn off servers w/o enough power (priority to keep servers on that are closest to completing a task)
     for edge in edge_computing_systems:
         servers_on = len(edge.servers)
-        power = edge.get_power_generated(irradiance_list[processing_time][edge.index])  # update power available
-        #print(f'Power {edge.index}: {power}')
+        power = irradiance_list[processing_time][edge.index]#edge.get_power_generated(irradiance_list[processing_time][edge.index])  # update power available
         battery_power = edge.current_battery
-        power_consumed = power + battery_power
+        max_power_available = power + battery_power
         most_servers_on = math.floor((power + battery_power) / power_per_server)
-        if most_servers_on < servers_on:  # determine how to shut down sites
-            application_progression = []
-            while most_servers_on < servers_on:
-                for server in edge.servers:
-                    if server.applications_running.keys() and application_progression:
-                        application_progression.append(min(list(server.applications_running.keys())))
-                    else:
-                        if server.on is True and server.applications_running == {}:
-                            server.on = False
-                            servers_on -= 1
-                            power_consumed -= power_per_server
-                            if servers_on <= most_servers_on:
-                                break
-                if application_progression:
-                    longest_app = max(application_progression, key=operator.attrgetter('time_left'))
-                    longest_app.parent.on = False
+
+        '''print(f'Power {edge.index}: {power}')
+        #print(f'Batter Power: {battery_power}')
+        #print(f'Max Power: {max_power_available}')
+        print(f'Servers on: {servers_on}')
+        print(f'Most Servers on: {most_servers_on}')'''
+
+        if servers_on > most_servers_on:
+            shortest_apps = []
+            for server in edge.servers:
+                if not server.applications_running and server.on is True:
+                    server.on = False
                     servers_on -= 1
-                    for app in list(longest_app.parent.applications_running):
-                        longest_app.parent.stop_application(app)
-                        application_progression.remove(app)
-                        partially_completed_applications.insert(0, app)
-                        #print('pausing', app, app.time_left, 'on', app.parent.parent)
-            if power_consumed > power:
-                edge.current_battery = power_consumed - power - battery_power
+                    max_power_available -= power_per_server
+                    if servers_on <= most_servers_on:
+                        break
+                else:
+                    shortest_apps.append(min(server.applications_running))
+            for app in sorted(shortest_apps,
+                                      key=operator.attrgetter('time_left'))[most_servers_on - servers_on:]:
+                app.parent.on = False
+                servers_on -= 1
+                max_power_available -= power_per_server
+                for running_app in app.parent.applications_running:
+                    app.parent.stop_application(running_app)
+                    shortest_apps.remove(running_app)
+                    partially_completed_applications.insert(0, running_app)
+                    print('pausing', running_app, running_app.time_left, 'on', running_app.parent.parent)
 
 
-def resume_applications(applications: list, shortest_distances: dict, cost_multiplier: float):
+def resume_applications(policy: str, applications: list, shortest_distances: dict, cost_multiplier: float):
     """
 
     :param applications: list of applications
     :param shortest_distances: dictionary of (dictionary of node:(closest node,distance) pairs)
+    :param cost_multiplier: constant in calculating delay
     :return: None
     """
-    for app in applications:
-        for server in shortest_distances[app.parent.parent][0].servers:
+
+    if policy == 'greedy':
+        for app in list(applications):
             if app.delay is None:
-                app.delay = math.ceil(shortest_distances[server.parent][1] * cost_multiplier)
+                app.delay = math.ceil(shortest_distances[app.parent.parent][1] * cost_multiplier)
             elif app.delay > 0:
                 app.delay -= 1
-            if app.delay <= 0 and server.on is True and app.cores <= server.cores and app.memory <= server.memory:
-                #print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
-                server.start_application(app)
+            for server in shortest_distances[app.parent.parent][0].servers:
+                if app.delay <= 0 and server.on is True and app.cores <= server.cores and app.memory <= server.memory:
+                    print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
+                    server.start_application(app)
+                    applications.remove(app)
+                    break
+    elif policy == 'passive':
+        for app in list(applications):
+            if app.parent.on and app.cores <= app.parent.cores and app.memory <= app.parent.memory:
+                app.parent.start_application(app)
                 applications.remove(app)
 
 
-def update_batteries(edge_computing_systems: list, power_per_server: float, irradiance_list: list,
+def update_batteries(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple,
                      processing_time: int):
     """
 
     :param edge_computing_systems: list of nodes
     :param power_per_server: power each server consumes
-    :param irradiance_list: list of solar irradiance lists
+    :param irradiance_list: tuple of solar irradiance lists
     :param processing_time: simulated time
     :return: None
     """
@@ -135,12 +145,12 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
     # power off servers without applications running
     for node in edge_computing_systems:
         for server in node.servers:
-            if server.on is True and server.applications_running == {}:
+            if server.on is True and not server.applications_running:
                 server.on = False
 
     # calculate leftover power per node
     for node in edge_computing_systems:
-        power = node.get_power_generated(irradiance_list[processing_time][node.index])  # update power available
+        power = irradiance_list[processing_time][node.index]#node.get_power_generated(irradiance_list[processing_time][node.index])  # update power available
         for server in node.servers:
             if server.on is True:
                 power -= power_per_server

@@ -2,7 +2,6 @@ import itertools
 import time
 import random
 import csv
-import numpy as np
 from geopy.distance import geodesic as gd
 
 from edge_computing_system import *
@@ -70,6 +69,7 @@ def main():
     edge_pv_area = float(config_info['PV Area'])
     cost_multiplier = float(config_info['Cost Multiplier'])
     node_placement = config_info['Node Placement'].strip()
+    policy = config_info['Policy'].strip()
     global_applications = True if config_info['Global Applications'].strip() == "True" else False
     trace_info = config_info['Traces'].strip()
     irradiance_info = config_info['Irradiance List'].strip()
@@ -98,16 +98,17 @@ def main():
 
         processing_time += 1
         print(f'Time = {processing_time}')
-        print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
+        #print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
 
         complete_applications(edge_computing_systems)
 
         shutdown_servers(edge_computing_systems, power_per_server, irradiance_list, processing_time,
                          partially_completed_applications)
 
-        resume_applications(partially_completed_applications, shortest_distances, cost_multiplier)
+        resume_applications(policy, partially_completed_applications, shortest_distances, cost_multiplier)
 
-        start_applications(edge_computing_systems, applications, global_applications)  # start applications
+        if applications:
+            start_applications(edge_computing_systems, applications, global_applications)  # start applications
 
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
@@ -119,11 +120,11 @@ def main():
 
 
 if __name__ == '__main__':
-    #main()
+    main()
 
-    with cProfile.Profile() as pr:
+    '''with cProfile.Profile() as pr:
         main()
 
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()
+    stats.print_stats()'''

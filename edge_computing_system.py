@@ -21,7 +21,7 @@ class EdgeSystem:
             self.cores = cores  # per server
             self.memory = memory  # per server, in MB
             self.on = False
-            self.applications_running = {}
+            self.applications_running = []
             self.parent = edge
 
         def update_resources(self, decision: str, app: object):
@@ -34,14 +34,14 @@ class EdgeSystem:
 
         def start_application(self, application: object):
             self.update_resources('reduce', application)
-            self.applications_running[application] = application.time_left  # application in "running" dict
+            self.applications_running.append(application)
             application.parent = self
 
         def stop_application(self, application: object):
-            '''if application.time_left == 0:
-                print('completed', application, 'at', application.parent)'''
+            if application.time_left == 0:
+                print('completed', application, 'at', application.parent)
             self.update_resources('restore', application)
-            del self.applications_running[application]  # delete from applications list if completed
+            self.applications_running.remove(application)  # delete from applications list if completed
 
 
 class Application:
