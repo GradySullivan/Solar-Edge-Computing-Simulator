@@ -1,10 +1,11 @@
 import math
 import operator
 
+from setup import *
+
 
 def start_applications(edge_computing_systems: list, applications: list, global_applications: bool):
     """
-
     :param edge_computing_systems: list of nodes
     :param applications: list of applications
     :param global_applications: determines if applications can start at any server or not
@@ -28,7 +29,6 @@ def start_applications(edge_computing_systems: list, applications: list, global_
 
 def complete_applications(edge_computing_systems: list):
     """
-
     :param edge_computing_systems: list of nodes
     :return: None
     """
@@ -43,7 +43,6 @@ def complete_applications(edge_computing_systems: list):
 
 def power_servers(edge_computing_systems: list):
     """
-
     :param edge_computing_systems: list of nodes
     :return: None
     """
@@ -56,7 +55,6 @@ def power_servers(edge_computing_systems: list):
 def shutdown_servers(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple,
                      processing_time: int, partially_completed_applications: list):
     """
-
        :param edge_computing_systems: list of nodes
        :param power_per_server: power that each server needs to operate, in W
        :param irradiance_list: tuple of irradiance values for each node
@@ -103,9 +101,10 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
                     print('pausing', running_app, running_app.time_left, 'on', running_app.parent.parent)
 
 
-def resume_applications(policy: str, applications: list, shortest_distances: dict, cost_multiplier: float):
+def resume_applications(policy: str, applications: list, shortest_distances: dict, cost_multiplier: float,
+                        edge_computing_systems: list, irradiance_list: list, processing_time: int,
+                        power_per_server: float):
     """
-
     :param applications: list of applications
     :param shortest_distances: dictionary of (dictionary of node:(closest node,distance) pairs)
     :param cost_multiplier: constant in calculating delay
@@ -122,19 +121,103 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                 if app.delay <= 0 and server.on is True and app.cores <= server.cores and app.memory <= server.memory:
                     print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
                     server.start_application(app)
+                    app.delay = None
                     applications.remove(app)
                     break
     elif policy == 'passive':
         for app in list(applications):
             if app.parent.on and app.cores <= app.parent.cores and app.memory <= app.parent.memory:
                 app.parent.start_application(app)
+                app.delay = None
                 applications.remove(app)
+    elif policy == 'super-greedy':
+        location_distances = get_distances(edge_computing_systems)
+        for app in list(applications):
+            if app.delay is None:
+                options = []
+                print(f'START: {app.parent.parent.index}')
+                for node in edge_computing_systems:
+                    power = irradiance_list[processing_time][node.index]  # node.get_power_generated(irradiance_list[processing_time][node.index])  # update power available
+                    if app.parent.parent == node:
+                        delay = 0
+                    else:
+                        try:
+                            delay = math.ceil(location_distances[(app.parent.parent, node)] * cost_multiplier)
+                        except KeyError:
+                            delay = math.ceil(location_distances[(node, app.parent.parent)] * cost_multiplier)
+                    if delay == 0:
+                        options.append((power, delay, node, 'wait'))
+                    else:
+                        options.append((power, delay, node, 'transfer'))
+                best_choice = max(options, key=lambda n: (n[0], -n[1]))
+                app.delay = best_choice[1]
+                app.parent = best_choice[2].servers[0]
+                print(f'END: {app.parent.parent.index}')
+            elif app.delay > 0:
+                app.delay -= 1
+            for server in app.parent.parent.servers:
+                if app.delay <= 0 and server.on is True and app.cores <= server.cores and app.memory <= server.memory:
+                    print(f'resume app:{app} on {server.parent}')
+                    server.start_application(app)
+                    app.delay = None
+                    applications.remove(app)
+                    break
+    elif policy == 'look-ahead':
+        location_distances = get_distances(edge_computing_systems)
+        for app in list(applications):
+            print(f'ORIGINAL: {app.parent.parent} {app.parent.parent.index}')
+            if app.delay is None:
+                options = []
+                for node in edge_computing_systems:
+                    if node == app.parent.parent:
+                        delay = 0
+                    else:
+                        try:
+                            delay = math.ceil(location_distances[(app.parent.parent, node)] * cost_multiplier)
+                        except KeyError:
+                            delay = math.ceil(location_distances[(node, app.parent.parent)] * cost_multiplier)
+                    print(f'DELAY: {delay} --> Node {node.index}')
+                    future_processing_time = processing_time + delay
+                    while True:
+                        power = irradiance_list[future_processing_time][node.index]  # node.get_power_generated(irradiance_list[processing_time][node.index])  # update power available
+                        if power >= power_per_server:
+                            if app.parent.parent == node:
+                                options.append((power, future_processing_time - processing_time, node.index, 'wait'))
+                            else:
+                                options.append((power, future_processing_time - processing_time, node.index,
+                                                'transfer'))
+                        future_processing_time += 1
+                        if power >= power_per_server:
+                            break
+                min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]
+                better_options = [choice for index, choice in enumerate(options) if choice[1] == min_delay]
+                for index, option in enumerate(better_options):
+                    if index == 0:
+                        best_choice = option
+                    if option[3] == 'wait':
+                        best_choice = option
+                print(best_choice)
+                app.delay = best_choice[1]
+                app.parent = edge_computing_systems[best_choice[2]].servers[0]
+                print(f'NEW: {app.parent.parent.index}')
+            else:
+                if app.delay > 0:
+                    app.delay -= 1
+                if app.delay <= 0:
+                    for server in app.parent.parent.servers:
+                        if server.on and app.cores <= server.cores and app.memory <= server.memory:
+                            server.start_application(app)
+                            print(f'resume app:{app} on {server.parent}')
+                            app.parent = server
+                            app.delay = None
+                            applications.remove(app)
+    elif policy == 'practical':
+        quit()
 
 
 def update_batteries(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple,
                      processing_time: int):
     """
-
     :param edge_computing_systems: list of nodes
     :param power_per_server: power each server consumes
     :param irradiance_list: tuple of solar irradiance lists
@@ -158,4 +241,4 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
             node.current_battery += power
         else:
             node.current_battery = node.max_battery
-        #print(f'Battery {node.index}: {node.current_battery}')
+        print(f'Battery {node.index}: {node.current_battery}')

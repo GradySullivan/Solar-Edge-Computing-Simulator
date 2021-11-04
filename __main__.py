@@ -14,7 +14,6 @@ import pstats
 
 def get_applications_running(edge_computing_systems: list):
     """
-
     :param edge_computing_systems: list of nodes
     :return: boolean
     """
@@ -28,7 +27,6 @@ def get_applications_running(edge_computing_systems: list):
 
 def simplify_time(sec: int):
     """
-
     :param sec: simulated seconds for how long it took for applications to complete
     :return: None
     """
@@ -74,6 +72,7 @@ def main():
     trace_info = config_info['Traces'].strip()
     irradiance_info = config_info['Irradiance List'].strip()
     coords = config_info['Coords']
+    diagnostics = bool(config_info['Diagnostics'].strip())
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory, battery, coords, node_placement)
@@ -95,7 +94,6 @@ def main():
     partially_completed_applications = []
 
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
-
         processing_time += 1
         print(f'Time = {processing_time}')
         #print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
@@ -105,7 +103,8 @@ def main():
         shutdown_servers(edge_computing_systems, power_per_server, irradiance_list, processing_time,
                          partially_completed_applications)
 
-        resume_applications(policy, partially_completed_applications, shortest_distances, cost_multiplier)
+        resume_applications(policy, partially_completed_applications, shortest_distances, cost_multiplier,
+                            edge_computing_systems, irradiance_list, processing_time, power_per_server)
 
         if applications:
             start_applications(edge_computing_systems, applications, global_applications)  # start applications
@@ -120,11 +119,11 @@ def main():
 
 
 if __name__ == '__main__':
+    global diagnostics
     main()
 
     '''with cProfile.Profile() as pr:
         main()
-
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
     stats.print_stats()'''

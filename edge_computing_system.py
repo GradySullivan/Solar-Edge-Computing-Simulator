@@ -1,3 +1,5 @@
+from __main__ import *
+
 class EdgeSystem:
     def __init__(self, pv_efficiency: float, pv_area: float, lat: float, long: float, battery: float, index: int):
         self.pv_efficiency = pv_efficiency  # between 0 and 1

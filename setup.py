@@ -1,9 +1,10 @@
+import operator
+
 from __main__ import *
 
 
 def config_setup():
     """
-
     :return: config_info: dictionary containing parameter:value pairs
     """
     """Converts parameters from config.txt into a dictionary for the simulator to reference when needed"""
@@ -33,7 +34,6 @@ def config_setup():
 def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, edge_pv_area: float, server_cores: int,
                    server_memory: int, battery: float, coords: list, method: str):
     """
-
     :param battery: amount of energy that can be stored
     :param num_edges: number of nodes in the edge computing system
     :param num_servers: number of servers per node
@@ -59,7 +59,6 @@ def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, 
 
 def generate_location(coords: list, method: str):
     """
-
     :param coords: (latitude, longitude) tuples
     :param method: determines which location generation algorithm to choose
     :return: a single latitude, longitude
@@ -80,7 +79,6 @@ def generate_location(coords: list, method: str):
 
 def generate_applications(file: str):
     """
-
     :param file: csv file containing applications
     :return: applications (list of applications)
     """
@@ -100,7 +98,6 @@ def generate_applications(file: str):
 
 def generate_irradiance_list(file: str):
     """
-
     :param file: text file containing irradiance values for each time period
     :return: irr_list (tuple of tuples containing irradiance values for each node
     """
@@ -119,7 +116,6 @@ def generate_irradiance_list(file: str):
 
 def get_distances(edge_computing_systems: list):
     """
-
     :param edge_computing_systems: list of nodes
     :return: location_distances (dictionary of (loc1,loc2):distance pairs)
     """
@@ -138,7 +134,6 @@ def get_distances(edge_computing_systems: list):
 
 def get_shortest_distances(edge_computing_systems: list):
     """
-
     :param edge_computing_systems: list of nodes
     :return: shortest_distances (dictionary of node:(closest node,distance) pairs)
     """
@@ -160,7 +155,6 @@ def get_shortest_distances(edge_computing_systems: list):
 
 def check_min_req(application_list: list, server_cores: int, server_memory: int):
     """
-
     :param application_list: list of applications
     :param server_cores: cores per server
     :param server_memory: memory per server, in MB
