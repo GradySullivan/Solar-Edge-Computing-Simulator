@@ -52,7 +52,7 @@ def simplify_time(sec: int):
 
 
 def main():
-    #random.seed(1)
+    random.seed(1)
     start_time = time.time()  # start timer
 
     # can be changed in config.txt
@@ -96,7 +96,7 @@ def main():
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
         print(f'Time = {processing_time}')
-        #print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
+        print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
 
         complete_applications(edge_computing_systems)
 
@@ -119,11 +119,10 @@ def main():
 
 
 if __name__ == '__main__':
-    global diagnostics
-    main()
+    #main()
 
-    '''with cProfile.Profile() as pr:
+    with cProfile.Profile() as pr:
         main()
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()'''
+    stats.print_stats()

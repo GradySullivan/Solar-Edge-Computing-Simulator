@@ -1,4 +1,5 @@
 import operator
+import random
 
 from __main__ import *
 
@@ -85,14 +86,18 @@ def generate_applications(file: str):
     """Convert application information from file into a list"""
     # create applications
     applications = []  # initialize list of class instances
+    total_time = 0
     with open(file, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)  # skip header
-        for row in csv_reader:
+        for index, row in enumerate(csv_reader):
             try:
-                applications.append(Application(int(row[2]), int(row[3]), int(row[5])))  # instance for each application
+                if int(row[3]) <= 64 and int(row[5]) <= 256000:
+                    applications.append(Application(int(row[2]), int(row[3]), int(row[5])))  # instance for each application
+                total_time += int(row[2])
             except:
                 pass
+    print(total_time)
     return applications
 
 
@@ -109,7 +114,8 @@ def generate_irradiance_list(file: str):
         for row in txt_reader:
             irr_interval = []
             for value in row:
-                irr_interval.append(float(value))
+                #irr_interval.append(float(value))
+                irr_interval.append(random.randint(0, 56250))
             irr_list.append(tuple(irr_interval))
     return tuple(irr_list)
 

@@ -1,5 +1,6 @@
 from __main__ import *
 
+
 class EdgeSystem:
     def __init__(self, pv_efficiency: float, pv_area: float, lat: float, long: float, battery: float, index: int):
         self.pv_efficiency = pv_efficiency  # between 0 and 1
@@ -40,8 +41,8 @@ class EdgeSystem:
             application.parent = self
 
         def stop_application(self, application: object):
-            if application.time_left == 0:
-                print('completed', application, 'at', application.parent)
+            '''if application.time_left == 0:
+                print('completed', application, 'at', application.parent)'''
             self.update_resources('restore', application)
             self.applications_running.remove(application)  # delete from applications list if completed
 
