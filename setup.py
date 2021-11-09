@@ -86,18 +86,17 @@ def generate_applications(file: str):
     """Convert application information from file into a list"""
     # create applications
     applications = []  # initialize list of class instances
-    total_time = 0
     with open(file, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader)  # skip header
-        for index, row in enumerate(csv_reader):
+        for row in csv_reader:
             try:
-                if int(row[3]) <= 64 and int(row[5]) <= 256000:
-                    applications.append(Application(int(row[2]), int(row[3]), int(row[5])))  # instance for each application
-                total_time += int(row[2])
-            except:
+                if int(row[3]) <= 64 and int(row[5]) <= 256000 and int(row[2]) <= 20000 and len(applications) < 100:
+                    applications.append(Application(int(row[2]), int(row[3]), int(row[5])))
+            except ValueError:
                 pass
-    print(total_time)
+            if len(applications) >= 100:
+                break
     return applications
 
 
@@ -141,7 +140,7 @@ def get_distances(edge_computing_systems: list):
 def get_shortest_distances(edge_computing_systems: list):
     """
     :param edge_computing_systems: list of nodes
-    :return: shortest_distances (dictionary of node:(closest node,distance) pairs)
+    :return: shortest_distances (dictionary of node:(closest node,distance) pairs) and location distances (all paths)
     """
     """For each node, determines the nearest neighboring node"""
     if len(edge_computing_systems) == 1:
@@ -156,7 +155,7 @@ def get_shortest_distances(edge_computing_systems: list):
         else:
             potential_shortest[key[1]] = location_distances[key]
         shortest_distances[edge] = min(potential_shortest.items(), key=operator.itemgetter(1))
-    return shortest_distances
+    return shortest_distances, location_distances
 
 
 def check_min_req(application_list: list, server_cores: int, server_memory: int):

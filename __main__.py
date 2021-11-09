@@ -51,6 +51,10 @@ def simplify_time(sec: int):
         print(f'[Simulated Time] {sec} second(s)')
 
 
+def update_results():
+    return None
+
+
 def main():
     random.seed(1)
     start_time = time.time()  # start timer
@@ -71,8 +75,9 @@ def main():
     global_applications = True if config_info['Global Applications'].strip() == "True" else False
     trace_info = config_info['Traces'].strip()
     irradiance_info = config_info['Irradiance List'].strip()
+    diagnostics = True if (config_info['Diagnostics'].strip()) == "True" else False
+
     coords = config_info['Coords']
-    diagnostics = bool(config_info['Diagnostics'].strip())
 
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory, battery, coords, node_placement)
@@ -87,6 +92,16 @@ def main():
 
     check_min_req(applications, server_cores, server_memory)  # prevents infinite loops
 
+    # lists to store results
+    simulated_time_results = []
+    queue_results = []
+    cumulative_paused_applications_results = []
+    current_paused_applications_results = []
+    cumulative_migrations_results = []
+    current_migrations_results = []
+    cumulative_completion_results = []
+    completion_rate_results = []
+
     # ---------------- simulation ----------------
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
@@ -95,27 +110,72 @@ def main():
 
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
-        print(f'Time = {processing_time}')
-        print(f'Percent of Applications Remaining: {len(applications) / total_applications}')
 
-        complete_applications(edge_computing_systems)
+        simulated_time_results.append(processing_time)
+        queue_results.append(len(applications))
 
-        shutdown_servers(edge_computing_systems, power_per_server, irradiance_list, processing_time,
-                         partially_completed_applications)
+        if diagnostics:
+            print(f'Time = {processing_time}')
 
-        resume_applications(policy, partially_completed_applications, shortest_distances, cost_multiplier,
-                            edge_computing_systems, irradiance_list, processing_time, power_per_server)
+        current_completed = complete_applications(edge_computing_systems, diagnostics)
+
+        if len(cumulative_completion_results) == 0:
+            cumulative_completion_results.append(current_completed)
+        else:
+            cumulative_completion_results.append(cumulative_completion_results[-1] + current_completed)
+        completion_rate_results.append(cumulative_completion_results[-1] / total_applications)
+
+        current_paused_applications = shutdown_servers(edge_computing_systems, power_per_server, irradiance_list,
+                                                       processing_time, partially_completed_applications, diagnostics)
+
+        current_paused_applications_results.append(current_paused_applications)
+        if len(cumulative_paused_applications_results) == 0:
+            cumulative_paused_applications_results.append(current_paused_applications)
+        else:
+            cumulative_paused_applications_results.append(cumulative_paused_applications_results[-1]
+                                                          + current_paused_applications)
+
+        current_migrations = resume_applications(policy, partially_completed_applications, shortest_distances,
+                                                 cost_multiplier, edge_computing_systems, irradiance_list,
+                                                 processing_time, power_per_server, diagnostics)
+
+        current_migrations_results.append(current_migrations)
+        if len(cumulative_migrations_results) == 0:
+            cumulative_migrations_results.append(current_migrations)
+        else:
+            cumulative_migrations_results.append(cumulative_migrations_results[-1] + current_migrations)
 
         if applications:
-            start_applications(edge_computing_systems, applications, global_applications)  # start applications
+            start_applications(edge_computing_systems, applications, global_applications, diagnostics)
 
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
+        update_results()
+
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
+
+    with open('output.txt', 'w') as file:
+        with open('config.txt', 'r') as config:
+            reader = config.readlines()
+        for line in reader:
+            file.write(line)
+        file.write('\n\n')
+        file.write('Simulated Time, Queue Length, Currently Paused, Cumulative Paused Applications, Current '
+                   'Migrations, Cumulative Migrations, Cumulative Completions, Completion %\n')
+        for index, value in enumerate(simulated_time_results):
+            file.write(f'{str(value)}, ')
+            file.write(f'{str(queue_results[index])}, ')
+            file.write(f'{str(current_paused_applications_results[index])}, ')
+            file.write(f'{str(cumulative_paused_applications_results[index])}, ')
+            file.write(f'{str(current_migrations_results[index])}, ')
+            file.write(f'{str(cumulative_migrations_results[index])}, ')
+            file.write(f'{str(cumulative_completion_results[index])}, ')
+            file.write(f'{str(completion_rate_results[index])}, ')
+            file.write('\n')
 
 
 if __name__ == '__main__':
