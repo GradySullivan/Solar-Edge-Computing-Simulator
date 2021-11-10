@@ -82,9 +82,9 @@ def main():
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory, battery, coords, node_placement)
 
-    shortest_distances = get_shortest_distances(edge_computing_systems)
+    shortest_distances, location_distances = get_shortest_distances(edge_computing_systems)
 
-    applications = generate_applications(trace_info)  # generate list of application instances
+    applications = generate_applications(f'Traces/{trace_info}')  # generate list of application instances
     total_applications = len(applications)
     print(f'TOTAL APPLICATIONS: {total_applications}')
 
@@ -158,12 +158,16 @@ def main():
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
 
-    with open('output.txt', 'w') as file:
+    with open(f'Outputs/{policy}_output.txt', 'w') as file:
         with open('config.txt', 'r') as config:
             reader = config.readlines()
         for line in reader:
             file.write(line)
         file.write('\n\n')
+        file.write('Application Completion Locations\n')
+        for node in edge_computing_systems:
+            file.write(f'Node {node.index}: {node.applications_completed}\n')
+        file.write('\n')
         file.write('Simulated Time, Queue Length, Currently Paused, Cumulative Paused Applications, Current '
                    'Migrations, Cumulative Migrations, Cumulative Completions, Completion %\n')
         for index, value in enumerate(simulated_time_results):

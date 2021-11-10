@@ -45,6 +45,7 @@ def complete_applications(edge_computing_systems: list, diagnostics: bool):
             if application.time_left <= 0:
                 server.stop_application(application)
                 current_completed += 1
+                application.parent.parent.applications_completed += 1
                 if diagnostics:
                     print(f'completed {application} on {application.parent.parent}')
     return current_completed
@@ -69,7 +70,6 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
     :param irradiance_list: tuple of irradiance values for each node
     :param processing_time: simulated time, in seconds
     :param partially_completed_applications: list of applications that have been paused
-    :param cumulative_paused_applications_results: list of cumulative applications paused over time
     :param diagnostics: determines whether to print information to console
     :return: None
     """
@@ -185,7 +185,8 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
             if app.delay <= 0:
                 for server in shortest_distances[app.parent.parent][0].servers:
                     if server.on is True and app.cores <= server.cores and app.memory <= server.memory:
-                        print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
+                        if diagnostics:
+                            print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
@@ -209,7 +210,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                             delay = math.ceil(location_distances[(node, app.parent.parent)] * cost_multiplier)
                     future_processing_time = processing_time + delay
                     while True:
-                        power = node.get_power_generated(irradiance_list[processing_time][node.index])
+                        power = node.get_power_generated(irradiance_list[future_processing_time][node.index])
                         if power >= power_per_server:
                             if app.parent.parent == node:
                                 options.append((power, future_processing_time - processing_time, node.index, 'wait'))
@@ -312,6 +313,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
         return look_ahead()
     elif policy == 'practical':
         return practical()
+
 
 def update_batteries(edge_computing_systems: list, power_per_server: float, irradiance_list: tuple,
                      processing_time: int):

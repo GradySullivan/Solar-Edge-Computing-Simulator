@@ -10,6 +10,7 @@ class EdgeSystem:
         self.long = long
         self.current_battery = 0
         self.max_battery = battery
+        self.applications_completed = 0
         self.index = index
 
     def get_server_object(self, cores: int, memory: int, edge: object):
