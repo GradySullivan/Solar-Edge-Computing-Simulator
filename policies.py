@@ -271,7 +271,10 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         avg_yesterday_irradiance2 = sum(yesterday_irradiance2) / len(yesterday_irradiance2)
                     else:
                         avg_yesterday_irradiance2 = 1000
-                    avg_today_irradiance1 = sum(today_irradiance1) / len(today_irradiance1)
+                    try:
+                        avg_today_irradiance1 = sum(today_irradiance1) / len(today_irradiance1)
+                    except ZeroDivisionError:
+                        avg_today_irradiance1 = 1000
                     irradiance = avg_yesterday_irradiance2 * avg_today_irradiance1 / avg_yesterday_irradiance1
                     estimated_power = node.get_power_generated(irradiance)
                     if estimated_power >= power_per_server:

@@ -6,13 +6,13 @@ Memory per Server: 256000
 Battery Size: 0
 Power per Server Needed: 250
 PV Efficiency: .22
-PV Area: 5
-Cost Multiplier: 0.001
+PV Area: 100
+Cost Multiplier: 0.000
 Node Placement: assigned
-Policy: look-ahead
-Global Applications: True
+Policy: YOLO
+Global Applications: False
 Traces: traces-2019.csv
-Irradiance List: irradiance3.txt
+Irradiance List: irradiance.txt
 Diagnostics: False
 --- Node Locations ---
 33.4484, -112.0740

@@ -163,11 +163,11 @@ def main():
             reader = config.readlines()
         for line in reader:
             file.write(line)
-        file.write('\n\n')
+        file.write('\n----------------\n')
         file.write('Application Completion Locations\n')
         for node in edge_computing_systems:
             file.write(f'Node {node.index}: {node.applications_completed}\n')
-        file.write('\n')
+        file.write('----------------\n')
         file.write('Simulated Time, Queue Length, Currently Paused, Cumulative Paused Applications, Current '
                    'Migrations, Cumulative Migrations, Cumulative Completions, Completion %\n')
         for index, value in enumerate(simulated_time_results):
