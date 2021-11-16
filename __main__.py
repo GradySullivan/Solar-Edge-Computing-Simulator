@@ -51,10 +51,6 @@ def simplify_time(sec: int):
         print(f'[Simulated Time] {sec} second(s)')
 
 
-def update_results():
-    return None
-
-
 def main():
     random.seed(1)
     start_time = time.time()  # start timer
@@ -116,6 +112,7 @@ def main():
 
         if diagnostics:
             print(f'Time = {processing_time}')
+            print(f'Queue Length: {len(applications)}')
 
         current_completed = complete_applications(edge_computing_systems, diagnostics)
 
@@ -153,11 +150,10 @@ def main():
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
-        update_results()
-
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
 
+    # write results to text file
     with open(f'Outputs/{policy}_output.txt', 'w') as file:
         with open('config.txt', 'r') as config:
             reader = config.readlines()

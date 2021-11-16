@@ -10,7 +10,7 @@ PV Area: 100
 Cost Multiplier: 0.000
 Node Placement: assigned
 Policy: YOLO
-Global Applications: False
+Global Applications: True
 Traces: traces-2019.csv
 Irradiance List: irradiance.txt
 Diagnostics: False

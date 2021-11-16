@@ -91,7 +91,7 @@ def generate_applications(file: str):
         next(csv_reader)  # skip header
         for row in csv_reader:
             try:
-                if int(row[3]) <= 64 and int(row[5]) <= 256000 and int(row[2]) <= 20000 and len(applications) < 100000:
+                if int(row[3]) <= 64 and int(row[5]) <= 256000 and int(row[2]) <= 10000 and len(applications) < 100000:
                     applications.append(Application(int(row[2]), int(row[3]), int(row[5])))
             except ValueError:
                 pass
@@ -113,9 +113,9 @@ def generate_irradiance_list(file: str):
         for row in txt_reader:
             irr_interval = []
             for value in row:
-                #irr_interval.append(float(value))
-                irr_interval.append(random.randint(0, 56250))
+                irr_interval.append(float(value))
             irr_list.append(tuple(irr_interval))
+
     return tuple(irr_list)
 
 
@@ -133,7 +133,7 @@ def get_distances(edge_computing_systems: list):
         for pair in combos:
             loc1 = (pair[0].lat, pair[0].long)  # coordinates for location 1
             loc2 = (pair[1].lat, pair[1].long)  # coordinates for location 2
-            location_distances[pair] = gd(loc1, loc2).km  # calculate distance between locations in km, add to dictionary
+            location_distances[pair] = gd(loc1, loc2).km
     return location_distances
 
 
@@ -143,10 +143,10 @@ def get_shortest_distances(edge_computing_systems: list):
     :return: shortest_distances (dictionary of node:(closest node,distance) pairs) and location distances (all paths)
     """
     """For each node, determines the nearest neighboring node"""
+    location_distances = get_distances(edge_computing_systems)
     if len(edge_computing_systems) == 1:
         shortest_distance = {edge_computing_systems[0]: (edge_computing_systems[0], 0)}
-        return shortest_distance
-    location_distances = get_distances(edge_computing_systems)
+        return shortest_distance, location_distances
     shortest_distances = {}
     for edge, key in itertools.product(edge_computing_systems, location_distances.keys()):
         potential_shortest = {}

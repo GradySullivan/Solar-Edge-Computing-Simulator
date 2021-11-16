@@ -47,7 +47,7 @@ def complete_applications(edge_computing_systems: list, diagnostics: bool):
                 current_completed += 1
                 application.parent.parent.applications_completed += 1
                 if diagnostics:
-                    print(f'completed {application} on {application.parent.parent}')
+                    print(f'completed {application} on Node {application.parent.parent.index}')
     return current_completed
 
 
@@ -282,8 +282,13 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                             options.append((estimated_power, delay, node.index, 'wait'))
                         else:
                             options.append((estimated_power, delay, node.index, 'transfer'))
-                min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]
+                try:
+                    min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]
+                except ValueError:
+                    min_delay = 0
                 better_options = [choice for choice in options if choice[1] == min_delay]
+                if len(better_options) == 0:
+                    break
                 for index, option in enumerate(better_options):
                     if index == 0:
                         best_choice = option
