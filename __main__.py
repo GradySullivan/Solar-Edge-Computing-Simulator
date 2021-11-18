@@ -3,6 +3,7 @@ import time
 import random
 import csv
 from geopy.distance import geodesic as gd
+from datetime import datetime
 
 from edge_computing_system import *
 from policies import *
@@ -80,7 +81,7 @@ def main():
 
     shortest_distances, location_distances = get_shortest_distances(edge_computing_systems)
 
-    applications = generate_applications(f'Traces/{trace_info}')  # generate list of application instances
+    applications = generate_applications(trace_info)  # generate list of application instances
     total_applications = len(applications)
     print(f'TOTAL APPLICATIONS: {total_applications}')
 
@@ -154,7 +155,8 @@ def main():
     print(f'Execution Time: {time.time() - start_time}')  # end timer
 
     # write results to text file
-    with open(f'Outputs/{policy}_output.txt', 'w') as file:
+    now = datetime.now().strftime("%Y_%H_%M_%S")
+    with open(f'Outputs/{policy}_output_{now}.txt', 'w') as file:
         with open('config.txt', 'r') as config:
             reader = config.readlines()
         for line in reader:
@@ -179,10 +181,10 @@ def main():
 
 
 if __name__ == '__main__':
-    #main()
+    main()
 
-    with cProfile.Profile() as pr:
+    '''with cProfile.Profile() as pr:
         main()
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()
+    stats.print_stats()'''
