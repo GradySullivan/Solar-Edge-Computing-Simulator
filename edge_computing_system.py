@@ -6,6 +6,7 @@ class EdgeSystem:
         self.pv_efficiency = pv_efficiency  # between 0 and 1
         self.pv_area = pv_area  # in m^2
         self.servers = []
+        self.queue = []
         self.lat = lat
         self.long = long
         self.current_battery = 0

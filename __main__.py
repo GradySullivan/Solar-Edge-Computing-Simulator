@@ -26,6 +26,27 @@ def get_applications_running(edge_computing_systems: list):
     return True
 
 
+def get_empty_queue(edge_computing_systems: list):
+    """
+    :param edge_computing_systems: list of nodes
+    :return: boolean
+    """
+    for node in edge_computing_systems:
+        if node.queue:
+            return False
+    return True
+
+
+def split(a: list, n: int):
+    """
+    :param a: list to split
+    :param n: how many parts to split list into
+    :return: split list
+    """
+    k, m = divmod(len(a), n)
+    return [a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n)]
+
+
 def simplify_time(sec: int):
     """
     :param sec: simulated seconds for how long it took for applications to complete
@@ -83,7 +104,10 @@ def main():
 
     applications = generate_applications(trace_info)  # generate list of application instances
     total_applications = len(applications)
-    print(f'TOTAL APPLICATIONS: {total_applications}')
+    split_applications = split(applications, len(edge_computing_systems))
+
+    for index, node in enumerate(edge_computing_systems):
+        node.queue = split_applications[index]
 
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
 
@@ -103,10 +127,14 @@ def main():
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
     all_servers_empty = False
+    all_empty_queues = False
     partially_completed_applications = []
 
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
+        if processing_time > 100000000:
+            print('ERROR: exceeding 100,000,000 iterations')
+            quit()
 
         simulated_time_results.append(processing_time)
         queue_results.append(len(applications))
@@ -114,6 +142,7 @@ def main():
         if diagnostics:
             print(f'Time = {processing_time}')
             print(f'Queue Length: {len(applications)}')
+            print(f'Partial: {len(partially_completed_applications)}')
 
         current_completed = complete_applications(edge_computing_systems, diagnostics)
 
@@ -149,13 +178,14 @@ def main():
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
 
+        all_empty_queues = get_empty_queue(edge_computing_systems)
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
 
     # write results to text file
-    now = datetime.now().strftime("%Y_%H_%M_%S")
+    now = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
     with open(f'Outputs/{policy}_output_{now}.txt', 'w') as file:
         with open('config.txt', 'r') as config:
             reader = config.readlines()

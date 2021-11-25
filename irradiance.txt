@@ -1,1 +1,1 @@
-irradiance list
+irradiances

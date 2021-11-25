@@ -91,12 +91,10 @@ def generate_applications(file: str):
         next(csv_reader)  # skip header
         for row in csv_reader:
             try:
-                if int(row[3]) <= 64 and int(row[5]) <= 256000 and int(row[2]) <= 10000 and len(applications) < 10000:
-                    applications.append(Application(int(row[2]), int(row[3]), int(row[5])))
+                if float(row[3]) <= 64 and float(row[5]) <= 256000:
+                    applications.append(Application(int(float(row[2])), int(float(row[3])), int(float(row[5]))))
             except ValueError:
                 pass
-            if len(applications) >= 10000:
-                break
     return applications
 
 

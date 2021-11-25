@@ -16,7 +16,7 @@ def start_applications(edge_computing_systems: list, applications: list, global_
     powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
     for server in powered_servers:
         if server.cores > 0 and server.memory > 0:
-            for app in list(applications):
+            for app in list(applications[:1000]):
                 '''To start an application, the server must have enough memory and cores. If this is fulfilled,
                     an application will run based on the global_applications value. If true, applications are considered
                     global and can start from any node. If false, applications must start from the a server whose node's 
@@ -209,7 +209,12 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         except KeyError:
                             delay = math.ceil(location_distances[(node, app.parent.parent)] * cost_multiplier)
                     future_processing_time = processing_time + delay
+                    loop_breaker = 0
                     while True:
+                        if loop_breaker >= 86400:
+                            break
+                        else:
+                            loop_breaker += 1
                         power = node.get_power_generated(irradiance_list[future_processing_time][node.index])
                         if power >= power_per_server:
                             if app.parent.parent == node:
@@ -220,15 +225,19 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         future_processing_time += 1
                         if power >= power_per_server:
                             break
-                min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]
-                better_options = [choice for choice in options if choice[1] == min_delay]
-                for index, option in enumerate(better_options):
-                    if index == 0:
-                        best_choice = option
-                    if option[3] == 'wait':
-                        best_choice = option
-                app.delay = best_choice[1]
-                app.parent = edge_computing_systems[best_choice[2]].servers[0]
+                try:
+                    min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]
+                    better_options = [choice for choice in options if choice[1] == min_delay]
+                    for index, option in enumerate(better_options):
+                        if index == 0:
+                            best_choice = option
+                        if option[3] == 'wait':
+                            best_choice = option
+                    app.delay = best_choice[1]
+                    app.parent = edge_computing_systems[best_choice[2]].servers[0]
+                except ValueError:
+                    print(app.parent)
+                    app.delay = 0
             else:
                 if app.delay > 0:
                     app.delay -= 1
