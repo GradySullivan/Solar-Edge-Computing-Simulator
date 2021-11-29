@@ -4,30 +4,34 @@ import operator
 from setup import *
 
 
-def start_applications(edge_computing_systems: list, applications: list, global_applications: bool, diagnostics: bool):
+def start_applications(edge_computing_systems: list, global_applications: bool, diagnostics: bool):
     """
     :param edge_computing_systems: list of nodes
-    :param applications: list of applications
     :param global_applications: determines if applications can start at any server or not
     :param diagnostics: determines whether to print information to console
     :return: None
     """
     """Start applications on a server for the first time"""
-    powered_servers = (server for node in edge_computing_systems for server in node.servers if server.on is True)
-    for server in powered_servers:
-        if server.cores > 0 and server.memory > 0:
-            for app in list(applications[:1000]):
-                '''To start an application, the server must have enough memory and cores. If this is fulfilled,
-                    an application will run based on the global_applications value. If true, applications are considered
-                    global and can start from any node. If false, applications must start from the a server whose node's 
-                    coordinates are first listed under "--- Node Locations ---" '''
-                if (app.memory <= server.memory) and (app.cores <= server.cores) and global_applications is True \
-                        or (app.memory <= server.memory) and (app.cores <= server.cores) and \
-                        global_applications is False and server.parent.index == 0:
-                    server.start_application(app)
-                    applications.remove(app)
-                    if diagnostics:
-                        print('started', app, 'from', app.parent, 'on', app.parent.parent)
+    if global_applications is False:
+        for node in edge_computing_systems:
+            for application in list(node.queue[:1000]):
+                for server in node.servers:
+                    if application.memory <= server.memory and application.cores <= server.cores and server.on:
+                        server.start_application(application)
+                        node.queue.remove(application)
+                        if diagnostics:
+                            print(f'started {application} at Node {application.parent.parent.index}')
+                        break
+    else:
+        for node in edge_computing_systems:
+            for application in list(edge_computing_systems[0].queue[:1000]):
+                for server in node.servers:
+                    if application.memory <= server.memory and application.cores <= server.cores and server.on:
+                        server.start_application(application)
+                        node.queue.remove(application)
+                        if diagnostics:
+                            print(f'started {application} at Node {application.parent.parent.index}')
+                        break
 
 
 def complete_applications(edge_computing_systems: list, diagnostics: bool):
@@ -47,7 +51,7 @@ def complete_applications(edge_computing_systems: list, diagnostics: bool):
                 current_completed += 1
                 application.parent.parent.applications_completed += 1
                 if diagnostics:
-                    print(f'completed {application} on Node {application.parent.parent.index}')
+                    print(f'completed {application} at Node {application.parent.parent.index}')
     return current_completed
 
 
@@ -83,6 +87,7 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
         battery_power = edge.current_battery
         max_power_available = power + battery_power
         most_servers_on = math.floor((power + battery_power) / power_per_server)
+        print(most_servers_on)
         if servers_on > most_servers_on:
             shortest_apps = []
             for server in edge.servers:
@@ -104,7 +109,8 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
                     partially_completed_applications.insert(0, running_app)
                     current_paused += 1
                     if diagnostics:
-                        print('pausing', running_app, running_app.time_left, 'on', running_app.parent.parent)
+                        print(f'Pausing {running_app} ({running_app.time_left} sec remaining) at Node '
+                              f'{running_app.parent.parent.index}')
     return current_paused
 
 
@@ -129,7 +135,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
         for app in list(applications):
             if app.parent.on and app.cores <= app.parent.cores and app.memory <= app.parent.memory:
                 if diagnostics:
-                    print(f'resume app:{app} on {app.parent.parent}')
+                    print(f'Resume app: {app} at Node {app.parent.parent.index}')
                 app.parent.start_application(app)
                 current_migrations += 1
                 app.delay = None
@@ -167,7 +173,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                 for server in app.parent.parent.servers:
                     if server.on is True and app.cores <= server.cores and app.memory <= server.memory:
                         if diagnostics:
-                            print(f'resume app:{app} on {server.parent}')
+                            print(f'Resume app: {app} at Node {app.parent.parent.index}')
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
@@ -186,7 +192,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                 for server in shortest_distances[app.parent.parent][0].servers:
                     if server.on is True and app.cores <= server.cores and app.memory <= server.memory:
                         if diagnostics:
-                            print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
+                            print(f'Resume app: {app} at Node {app.parent.parent.index}')
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
@@ -236,7 +242,6 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                     app.delay = best_choice[1]
                     app.parent = edge_computing_systems[best_choice[2]].servers[0]
                 except ValueError:
-                    print(app.parent)
                     app.delay = 0
             else:
                 if app.delay > 0:
@@ -245,7 +250,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                     for server in app.parent.parent.servers:
                         if server.on and app.cores <= server.cores and app.memory <= server.memory:
                             if diagnostics:
-                                print(f'resume app:{app} on {server.parent}')
+                                print(f'Resume app: {app} at Node {app.parent.parent.index}')
                             server.start_application(app)
                             current_migrations += 1
                             app.parent = server
@@ -313,7 +318,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         server.start_application(app)
                         current_migrations += 1
                         if diagnostics:
-                            print(f'resume app:{app} on {server.parent} {server.parent.index}')
+                            print(f'Resume app: {app} at Node {app.parent.parent.index}')
                         app.parent = server
                         app.delay = None
                         applications.remove(app)

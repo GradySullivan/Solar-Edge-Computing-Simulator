@@ -31,26 +31,18 @@ def get_max_values():
 
 def get_max_irradiance():
     # determine scaling
-    lst = []
+    current_max_lst = []
     for file in os.listdir('Irradiance Lists'):
+        lst = []
         with open(f'Irradiance Lists/{file}', 'r') as f:
-            lst2 = []
             reader = csv.reader(f, delimiter=',')
             next(reader)
-            for line in reader:
-                if line != '':
-                    for i in range(1):
-                        if float(line[4]) < 0:
-                            lst2.append(float(0))
-                        else:
-                            lst2.append(float(line[4]) * 1)
-                        if len(lst2) > 2000000:
-                            break
-            lst.append(lst2)
-    max_list = []
-    for i in lst:
-        max_list.append(max(i))
-    return max(max_list)
+            for index, line in enumerate(reader):
+                if index > 1000:
+                    break
+                lst.append(float(line[4]))
+            current_max_lst.append(max(lst))
+    return max(current_max_lst)
 
 
 def get_max_irradiance_random(nodes: list):
@@ -70,13 +62,13 @@ def get_max_irradiance_random(nodes: list):
             for line in reader:
                 print(line)
                 if line != '':
-                    for i in range(1):
+                    for i in range(3600):
                         if float(line[4]) < 0:
                             lst2.append(float(0))
                         else:
                             lst2.append(float(line[4]) * 1)
-                        if len(lst2) > 500000:
-                            break
+                if len(lst2) > 100000 * 3600:
+                    break
             lst.append(lst2)
     max_list = []
     for i in lst:
@@ -92,14 +84,13 @@ def compile_irradiances(scale: float):
             reader = csv.reader(f, delimiter=',')
             next(reader)
             for line in reader:
-                if line != '':
-                    for i in range(3600):
-                        if float(line[4]) < 0:
-                            lst2.append(float(0))
-                        else:
-                            lst2.append(float(line[4]) * scale)
-                        if len(lst2) >= 25000000:
-                            break
+                for i in range(3600):
+                    if float(line[4]) < 0:
+                        lst2.append(float(0))
+                    else:
+                        lst2.append(float(line[4]) * scale)
+                    if len(lst2) >= 10000000:
+                        break
             lst.append(lst2)
 
     reformatted = []

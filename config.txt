@@ -9,12 +9,12 @@ PV Efficiency: .22
 PV Area: 100
 Cost Multiplier: 0
 Node Placement: assigned
-Policy: passive
-Global Applications: True
+Policy: practical
+Global Applications: False
 Traces: traces-2019.csv
 Irradiance List: irradiance.txt
 Diagnostics: True
 --- Node Locations ---
-33.4484, -112.0740
-40.7128, -74.0060
-35.6762, 139.6503
+40.0755, -105.194
+30.22859, -97.8138
+44.17902, -73.6143

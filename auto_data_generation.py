@@ -20,14 +20,14 @@ def write_config(policy: str, migration_cost: float, battery: float):
         config.write(f'Cost Multiplier: {migration_cost}\n')
         config.write('Node Placement: assigned\n')
         config.write(f'Policy: {policy}\n')
-        config.write('Global Applications: True\n')
+        config.write('Global Applications: False\n')
         config.write('Traces: traces-2019.csv\n')
         config.write('Irradiance List: irradiance.txt\n')
         config.write('Diagnostics: True\n')
         config.write('--- Node Locations ---\n')
-        config.write('33.4484, -112.0740\n')
-        config.write('40.7128, -74.0060\n')
-        config.write('35.6762, 139.6503')
+        config.write('40.0755, -105.194\n')
+        config.write('30.22859, -97.8138\n')
+        config.write('44.17902, -73.6143')
 
 
 if __name__ == '__main__':
@@ -70,11 +70,16 @@ if __name__ == '__main__':
     else:
         needed_power = num_servers * cost_per_server
         max_irr_pre_scale = get_max_irradiance()
+        print(f'max: {max_irr_pre_scale}')
         scale = needed_power / pv_area / pv_efficiency / max_irr_pre_scale
-        compile_irradiances(scale)
+        print(f'scale: {scale}')
+        compile_irradiances(scale * 2)
+
         for method in methods:
             for cost in migration_costs:
                 for battery in batteries:
                     write_config(method, cost, battery)
                     os.system('__main__.py')  # for Windows
                     # os.system('python3 __main__.py')  # for Linux
+                    if method == 'passive':
+                        break

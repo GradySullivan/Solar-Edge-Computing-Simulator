@@ -106,8 +106,11 @@ def main():
     total_applications = len(applications)
     split_applications = split(applications, len(edge_computing_systems))
 
-    for index, node in enumerate(edge_computing_systems):
-        node.queue = split_applications[index]
+    if global_applications is False:
+        for index, node in enumerate(edge_computing_systems):
+            node.queue = split_applications[index]
+    else:
+        edge_computing_systems[0].queue = applications
 
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
 
@@ -130,18 +133,22 @@ def main():
     all_empty_queues = False
     partially_completed_applications = []
 
-    while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
+    while all_empty_queues is False or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
         if processing_time > 100000000:
             print('ERROR: exceeding 100,000,000 iterations')
             quit()
 
         simulated_time_results.append(processing_time)
-        queue_results.append(len(applications))
+
+        total_queue_length = 0
+        for node in edge_computing_systems:
+            total_queue_length += len(node.queue)
+        queue_results.append(total_queue_length)
 
         if diagnostics:
             print(f'Time = {processing_time}')
-            print(f'Queue Length: {len(applications)}')
+            print(f'Queue Length: {total_queue_length}')
             print(f'Partial: {len(partially_completed_applications)}')
 
         current_completed = complete_applications(edge_computing_systems, diagnostics)
@@ -172,8 +179,7 @@ def main():
         else:
             cumulative_migrations_results.append(cumulative_migrations_results[-1] + current_migrations)
 
-        if applications:
-            start_applications(edge_computing_systems, applications, global_applications, diagnostics)
+        start_applications(edge_computing_systems, global_applications, diagnostics)
 
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
