@@ -9,7 +9,7 @@ PV Efficiency: .22
 PV Area: 100
 Cost Multiplier: 0
 Node Placement: assigned
-Policy: practical
+Policy: passive
 Global Applications: False
 Traces: traces-2019.csv
 Irradiance List: irradiance.txt

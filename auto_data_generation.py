@@ -56,9 +56,7 @@ if __name__ == '__main__':
         needed_power = num_servers * cost_per_server
         for node_list in node_lists:
             print(f'Nodes {node_list[0]}, {node_list[1]}, {node_list[2]}')
-            max_irr_pre_scale = get_max_irradiance_random(node_list)
-            scale = needed_power / pv_area / pv_efficiency / max_irr_pre_scale
-            compile_irradiances(scale)
+            compile_irradiances(1)
 
             for method in methods:
                 for cost in migration_costs:
@@ -68,12 +66,7 @@ if __name__ == '__main__':
                         # os.system('python3 __main__.py')  # for Linux
 
     else:
-        needed_power = num_servers * cost_per_server
-        max_irr_pre_scale = get_max_irradiance()
-        print(f'max: {max_irr_pre_scale}')
-        scale = needed_power / pv_area / pv_efficiency / max_irr_pre_scale
-        print(f'scale: {scale}')
-        compile_irradiances(scale * 2)
+        compile_irradiances(1)
 
         for method in methods:
             for cost in migration_costs:
