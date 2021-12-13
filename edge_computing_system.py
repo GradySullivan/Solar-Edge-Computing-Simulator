@@ -49,8 +49,6 @@ class EdgeSystem:
 
 class Application:
     def __init__(self, runtime: int, cores: int, memory: int):
-        self.running = False  # use attribute for transferring task
-        self.prev_node = False
         self.runtime = runtime
         self.cores = cores
         self.memory = memory

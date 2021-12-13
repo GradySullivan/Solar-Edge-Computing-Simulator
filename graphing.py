@@ -5,9 +5,10 @@ import numpy as np
 
 
 class Results:
-    def __init__(self, policy: str, migration_cost: float, battery: float, simulated_time: list, queue: list, current_paused_applications: list,
-                 cumulative_paused_applications: list, current_migrations: list, cumulative_migrations: list,
-                 cumulative_completion: list, completion_rate: list, completion_location_counts: list):
+    def __init__(self, policy: str, migration_cost: float, battery: float, simulated_time: list, queue: list,
+                 current_paused_applications: list, cumulative_paused_applications: list, current_migrations: list,
+                 cumulative_migrations: list, cumulative_completion: list, completion_rate: list,
+                 completion_location_counts: list):
         self.policy = policy
         self.migration_cost = migration_cost
         self.battery = battery
@@ -24,6 +25,14 @@ class Results:
 
 
 if __name__ == '__main__':
+    print('Graphing Options')
+    print('----------------')
+    print('1. Migration Policy vs Time')
+    print('2. Migration policy vs Completion Locations')
+    print('3. Migration Policy vs Completion Locations (multiple trials)')
+    print('4. Transfer Cost vs Simulated Time')
+    print('5. Battery Size vs Simulated Time')
+    choice = int(input('Select Graph: '))
 
     outputs = []
     for file in os.listdir('Outputs'):
@@ -75,179 +84,200 @@ if __name__ == '__main__':
                 elif index > 100:
                     break
 
-        outputs.append(Results(policy, migration_cost, battery, simulated_time, queue, current_paused_applications, cumulative_paused_applications,
+        outputs.append(Results(policy, migration_cost, battery, simulated_time, queue, current_paused_applications,
+                               cumulative_paused_applications,
                                current_migrations, cumulative_migrations, cumulative_completion, completion_rate,
                                completion_location_counts))
 
     '''for output in outputs:
         print(output.policy, output.total_time, output.battery)'''
 
-    # migration policy vs simulated time
-    '''methods = [output.policy for output in outputs]
-    sim_time = [output.total_time for output in outputs]
-    plt.figure(figsize=(5, 3))
-    for index, value in enumerate(sim_time):
-        plt.text(index, value, str(value), color='black')
-    plt.bar(methods, sim_time, color='gray', width=0.5)
-    plt.ylabel('Simulated Time (s)')
-    #plt.ticklabel_format(axis='y', style='plain')
-    plt.show()'''
+    if choice == 1:
+        # migration policy vs simulated time
+        methods = list({output.policy for output in outputs})
+        sim_time = []
+        for method in methods:
+            temp, count = 0, 0
+            for output in outputs:
+                if output.policy == method:
+                    temp += output.total_time
+                    count += 1
+            sim_time.append(round(temp / count / 3600, 2))
+        plt.figure(figsize=(5, 3))
+        for index, value in enumerate(sim_time):
+            plt.text(index, value, value, color='black')
+        plt.bar(methods, sim_time, color='gray', width=0.5)
+        plt.ylabel('Simulated Time (hrs)')
+        plt.xlabel("Migration Policy")
+        plt.show()
 
-    # migration policy vs simulated time (multiple trials)
-    methods = ['passive', 'greedy', 'super-greedy', 'YOLO', 'look-ahead', 'practical']
-    sim_time = [0, 0, 0, 0, 0, 0]
-    for output in outputs:
-        print(output.total_time, output.policy)
-        if output.policy == 'passive':
-            sim_time[0] += output.total_time
-        elif output.policy == 'greedy':
-            sim_time[1] += output.total_time
-        elif output.policy == 'super-greedy':
-            sim_time[2] += output.total_time
-        elif output.policy == 'YOLO':
-            sim_time[3] += output.total_time
-        elif output.policy == 'look-ahead':
-            sim_time[4] += output.total_time
-        elif output.policy == 'practical':
-            sim_time[5] += output.total_time
+    elif choice == 2:
+        # migration policy vs completion locations
+        node0, node1, node2 = [], [], []
+        for output in outputs:
+            node0.append(output.location_counts[0])
+            node1.append(output.location_counts[1])
+            node2.append(output.location_counts[2])
+        print(node0, node1, node2)
 
-    avg_time = []
-    for time in sim_time:
-        avg_time.append(time / (len([output for output in outputs])/6))
+        N = 6
+        ind = np.arange(N)
+        width = 0.25
 
-    plt.figure(figsize=(5, 3))
-    for index, value in enumerate(avg_time):
-        plt.text(index, value, str(value), color='black')
-    print(methods, avg_time)
-    plt.bar(methods, avg_time, color='gray', width=0.5)
-    plt.ylabel('Simulated Time (s)')
-    plt.show()
+        bar1 = plt.bar(ind, node0, width, color='r')
+        bar2 = plt.bar(ind + width, node1, width, color='g')
+        bar3 = plt.bar(ind + width * 2, node2, width, color='b')
 
-    # migration policy vs completion locations
-    '''node0, node1, node2 = [], [], []
-    for output in outputs:
-        node0.append(output.location_counts[0])
-        node1.append(output.location_counts[1])
-        node2.append(output.location_counts[2])
-    print(node0, node1, node2)
+        plt.xlabel("Migration Policy")
+        plt.ylabel('Tasks Completed')
 
-    N = 6
-    ind = np.arange(N)
-    width = 0.25
+        plt.xticks(ind + width, ['greedy', 'look-ahead', 'passive', 'practical', 'super-greedy', 'YOLO'])
+        plt.legend((bar1, bar2, bar3), ('Node 0', 'Node 1', 'Node 2'))
+        plt.show()
 
-    bar1 = plt.bar(ind, node0, width, color='r')
-    bar2 = plt.bar(ind + width, node1, width, color='g')
-    bar3 = plt.bar(ind + width * 2, node2, width, color='b')
+    elif choice == 3:
+        # migration policy vs completion locations (multiple trials)
+        methods = ['greedy', 'look-ahead', 'passive', 'practical', 'super-greedy', 'YOLO']
+        node0, node1, node2 = [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]
+        for output in outputs:
+            if output.policy == 'super-greedy':
+                node0[0] += output.location_counts[0]
+                node1[0] += output.location_counts[1]
+                node2[0] += output.location_counts[2]
+            elif output.policy == 'passive':
+                node0[1] += output.location_counts[0]
+                node1[1] += output.location_counts[1]
+                node2[1] += output.location_counts[2]
+            elif output.policy == 'look-ahead':
+                node0[2] += output.location_counts[0]
+                node1[2] += output.location_counts[1]
+                node2[2] += output.location_counts[2]
+            elif output.policy == 'greedy':
+                node0[3] += output.location_counts[0]
+                node1[3] += output.location_counts[1]
+                node2[3] += output.location_counts[2]
+            elif output.policy == 'practical':
+                node0[4] += output.location_counts[0]
+                node1[4] += output.location_counts[1]
+                node2[4] += output.location_counts[2]
+            elif output.policy == 'YOLO':
+                node0[5] += output.location_counts[0]
+                node1[5] += output.location_counts[1]
+                node2[5] += output.location_counts[2]
 
-    plt.xlabel("Methods")
-    plt.ylabel('Tasks Completed')
+        avg_node0, avg_node1, avg_node2 = [], [], []
+        for value in node0:
+            avg_node0.append(value / (len([output for output in outputs]) / 6))
+        for value in node1:
+            avg_node1.append(value / (len([output for output in outputs]) / 6))
+        for value in node2:
+            avg_node2.append(value / (len([output for output in outputs]) / 6))
 
-    plt.xticks(ind + width, ['greedy', 'look-ahead', 'passive', 'practical', 'super-greedy', 'YOLO'])
-    plt.legend((bar1, bar2, bar3), ('Node 0', 'Node 1', 'Node 2'))
-    plt.show()'''
+        N = 6
+        ind = np.arange(N)
+        width = 0.25
 
-    # migration policy vs completion locations (multiple trials)
-    '''methods = ['greedy', 'look-ahead', 'passive', 'practical', 'super-greedy', 'YOLO']
-    node0, node1, node2 = [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]
-    for output in outputs:
-        if output.policy == 'super-greedy':
-            node0[0] += output.location_counts[0]
-            node1[0] += output.location_counts[1]
-            node2[0] += output.location_counts[2]
-        elif output.policy == 'passive':
-            node0[1] += output.location_counts[0]
-            node1[1] += output.location_counts[1]
-            node2[1] += output.location_counts[2]
-        elif output.policy == 'look-ahead':
-            node0[2] += output.location_counts[0]
-            node1[2] += output.location_counts[1]
-            node2[2] += output.location_counts[2]
-        elif output.policy == 'greedy':
-            node0[3] += output.location_counts[0]
-            node1[3] += output.location_counts[1]
-            node2[3] += output.location_counts[2]
-        elif output.policy == 'practical':
-            node0[4] += output.location_counts[0]
-            node1[4] += output.location_counts[1]
-            node2[4] += output.location_counts[2]
-        elif output.policy == 'YOLO':
-            node0[5] += output.location_counts[0]
-            node1[5] += output.location_counts[1]
-            node2[5] += output.location_counts[2]
+        bar1 = plt.bar(ind, avg_node0, width, color='r')
+        bar2 = plt.bar(ind + width, avg_node1, width, color='g')
+        bar3 = plt.bar(ind + width * 2, avg_node2, width, color='b')
 
-    avg_node0, avg_node1, avg_node2 = [], [], []
-    for value in node0:
-        avg_node0.append(value / (len([output for output in outputs]) / 6))
-    for value in node1:
-        avg_node1.append(value / (len([output for output in outputs]) / 6))
-    for value in node2:
-        avg_node2.append(value / (len([output for output in outputs]) / 6))
+        plt.xlabel("Methods")
+        plt.ylabel('Tasks Completed')
 
-    N = 6
-    ind = np.arange(N)
-    width = 0.25
+        plt.xticks(ind + width, methods)
+        plt.legend((bar1, bar2, bar3), ('Node 0', 'Node 1', 'Node 2'))
+        plt.show()
 
-    bar1 = plt.bar(ind, avg_node0, width, color='r')
-    bar2 = plt.bar(ind + width, avg_node1, width, color='g')
-    bar3 = plt.bar(ind + width * 2, avg_node2, width, color='b')
+    elif choice == 4:
+        # transfer cost vs simulated time
+        x = [output.migration_cost for output in outputs if output.policy == 'passive']
+        passive_y = [output.total_time/3600 for output in outputs if output.policy == 'passive']
+        greedy_y = [output.total_time/3600 for output in outputs if output.policy == 'greedy']
+        super_greedy_y = [output.total_time/3600 for output in outputs if output.policy == 'super-greedy']
+        yolo_y = [output.total_time/3600 for output in outputs if output.policy == 'YOLO']
+        look_ahead_y = [output.total_time/3600 for output in outputs if output.policy == 'look-ahead']
+        practical_y = [output.total_time/3600 for output in outputs if output.policy == 'practical']
 
-    plt.xlabel("Methods")
-    plt.ylabel('Tasks Completed')
+        plt.subplot(2, 3, 1)
+        plt.plot(x, passive_y, color='black', label='passive')
+        plt.xscale('log')
+        plt.ylabel('Simulated Time (hrs)')
+        plt.title('Passive')
 
-    plt.xticks(ind + width, methods)
-    plt.legend((bar1, bar2, bar3), ('Node 0', 'Node 1', 'Node 2'))
-    plt.show()'''
+        plt.subplot(2, 3, 2)
+        plt.plot(x, greedy_y, color='black', label='greedy')
+        plt.xscale('log')
+        plt.title('Greedy')
 
-    # transfer cost vs simulated time
-    '''x = [output.migration_cost for output in outputs]
-    y = [output.total_time for output in outputs]
-    plt.plot(x, y)
-    plt.xlabel('Migration Cost Multiplier')
-    plt.ylabel('Simulated Time (sec)')
-    plt.show()'''
+        plt.subplot(2, 3, 3)
+        plt.plot(x, super_greedy_y, color='black', label='super-greedy')
+        plt.xscale('log')
+        plt.title('Super-Greedy')
 
-    # battery vs simulated time
-    '''x = [output.battery for output in outputs if output.policy == 'passive']
-    passive_y = [output.total_time for output in outputs if output.policy == 'passive']
-    greedy_y = [output.total_time for output in outputs if output.policy == 'greedy']
-    super_greedy_y = [output.total_time for output in outputs if output.policy == 'super-greedy']
-    yolo_y = [output.total_time for output in outputs if output.policy == 'YOLO']
-    look_ahead_y = [output.total_time for output in outputs if output.policy == 'look-ahead']
-    practical_y = [output.total_time for output in outputs if output.policy == 'practical']
+        plt.subplot(2, 3, 4)
+        plt.plot(x, yolo_y, color='black', label='YOLO')
+        plt.xscale('log')
+        plt.xlabel('Migration Coefficient')
+        plt.ylabel('Simulated Time (hrs)')
+        plt.title('YOLO')
 
-    plt.subplot(2, 3, 1)
-    plt.plot(x, passive_y, color='black', label='passive')
-    plt.xscale('log')
-    plt.ylabel('Simulated Time (sec)')
-    plt.title('Passive')
+        plt.subplot(2, 3, 5)
+        plt.plot(x, look_ahead_y, color='black', label='look-ahead')
+        plt.xscale('log')
+        plt.xlabel('Migration Coefficient')
+        plt.title('Look-ahead')
 
-    plt.subplot(2, 3, 2)
-    plt.plot(x, greedy_y, color='black', label='greedy')
-    plt.xscale('log')
-    plt.title('Greedy')
+        plt.subplot(2, 3, 6)
+        plt.plot(x, practical_y, color='black', label='practical')
+        plt.xscale('log')
+        plt.xlabel('Migration Coefficient')
+        plt.title('Practical')
 
-    plt.subplot(2, 3, 3)
-    plt.plot(x, super_greedy_y, color='black', label='super-greedy')
-    plt.xscale('log')
-    plt.title('Super-Greedy')
+        plt.show()
 
-    plt.subplot(2, 3, 4)
-    plt.plot(x, yolo_y, color='black', label='YOLO')
-    plt.xscale('log')
-    plt.xlabel('Battery Size')
-    plt.ylabel('Simulated Time (sec)')
-    plt.title('YOLO')
+    elif choice == 5:
+        # battery vs simulated time
+        x = [output.battery for output in outputs if output.policy == 'passive']
+        passive_y = [output.total_time for output in outputs if output.policy == 'passive']
+        greedy_y = [output.total_time for output in outputs if output.policy == 'greedy']
+        super_greedy_y = [output.total_time for output in outputs if output.policy == 'super-greedy']
+        yolo_y = [output.total_time for output in outputs if output.policy == 'YOLO']
+        look_ahead_y = [output.total_time for output in outputs if output.policy == 'look-ahead']
+        practical_y = [output.total_time for output in outputs if output.policy == 'practical']
 
-    plt.subplot(2, 3, 5)
-    plt.plot(x, look_ahead_y, color='black', label='look-ahead')
-    plt.xscale('log')
-    plt.xlabel('Battery Size')
-    plt.title('Look-ahead')
+        plt.subplot(2, 3, 1)
+        plt.plot(x, passive_y, color='black', label='passive')
+        plt.xscale('log')
+        plt.ylabel('Simulated Time (sec)')
+        plt.title('Passive')
 
-    plt.subplot(2, 3, 6)
-    plt.plot(x, practical_y, color='black', label='practical')
-    plt.xscale('log')
-    plt.xlabel('Battery Size')
-    plt.title('Practical')
+        plt.subplot(2, 3, 2)
+        plt.plot(x, greedy_y, color='black', label='greedy')
+        plt.xscale('log')
+        plt.title('Greedy')
 
-    plt.show()'''
+        plt.subplot(2, 3, 3)
+        plt.plot(x, super_greedy_y, color='black', label='super-greedy')
+        plt.xscale('log')
+        plt.title('Super-Greedy')
+
+        plt.subplot(2, 3, 4)
+        plt.plot(x, yolo_y, color='black', label='YOLO')
+        plt.xscale('log')
+        plt.xlabel('Battery Size')
+        plt.ylabel('Simulated Time (sec)')
+        plt.title('YOLO')
+
+        plt.subplot(2, 3, 5)
+        plt.plot(x, look_ahead_y, color='black', label='look-ahead')
+        plt.xscale('log')
+        plt.xlabel('Battery Size')
+        plt.title('Look-ahead')
+
+        plt.subplot(2, 3, 6)
+        plt.plot(x, practical_y, color='black', label='practical')
+        plt.xscale('log')
+        plt.xlabel('Battery Size')
+        plt.title('Practical')
+
+        plt.show()

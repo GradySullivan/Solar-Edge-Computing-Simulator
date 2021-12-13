@@ -9,9 +9,6 @@ from edge_computing_system import *
 from policies import *
 from setup import *
 
-import cProfile
-import pstats
-
 
 def get_applications_running(edge_computing_systems: list):
     """
@@ -24,27 +21,6 @@ def get_applications_running(edge_computing_systems: list):
             if server.applications_running:
                 return False
     return True
-
-
-def get_empty_queue(edge_computing_systems: list):
-    """
-    :param edge_computing_systems: list of nodes
-    :return: boolean
-    """
-    for node in edge_computing_systems:
-        if node.queue:
-            return False
-    return True
-
-
-def split(a: list, n: int):
-    """
-    :param a: list to split
-    :param n: how many parts to split list into
-    :return: split list
-    """
-    k, m = divmod(len(a), n)
-    return [a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n)]
 
 
 def simplify_time(sec: int):
@@ -74,7 +50,6 @@ def simplify_time(sec: int):
 
 
 def main():
-    random.seed(1)
     start_time = time.time()  # start timer
 
     # can be changed in config.txt
@@ -104,13 +79,6 @@ def main():
 
     applications = generate_applications(trace_info)  # generate list of application instances
     total_applications = len(applications)
-    split_applications = split(applications, len(edge_computing_systems))
-
-    if global_applications is False:
-        for index, node in enumerate(edge_computing_systems):
-            node.queue = split_applications[index]
-    else:
-        edge_computing_systems[0].queue = applications
 
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
 
@@ -130,25 +98,20 @@ def main():
 
     processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
     all_servers_empty = False
-    all_empty_queues = False
     partially_completed_applications = []
 
-    while all_empty_queues is False or len(partially_completed_applications) != 0 or all_servers_empty is False:
+    while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
         if processing_time > 100000000:
             print('ERROR: exceeding 100,000,000 iterations')
             quit()
 
         simulated_time_results.append(processing_time)
-
-        total_queue_length = 0
-        for node in edge_computing_systems:
-            total_queue_length += len(node.queue)
-        queue_results.append(total_queue_length)
+        queue_results.append(len(applications))
 
         if diagnostics:
             print(f'Time = {processing_time}')
-            print(f'Queue Length: {total_queue_length}')
+            print(f'Queue Length: {len(applications)}')
             print(f'Partial: {len(partially_completed_applications)}')
 
         current_completed = complete_applications(edge_computing_systems, diagnostics)
@@ -179,12 +142,12 @@ def main():
         else:
             cumulative_migrations_results.append(cumulative_migrations_results[-1] + current_migrations)
 
-        start_applications(edge_computing_systems, global_applications, diagnostics)
+        if applications:
+            start_applications(edge_computing_systems, applications, global_applications, diagnostics)
 
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
 
-        all_empty_queues = get_empty_queue(edge_computing_systems)
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
     simplify_time(processing_time)  # simulation time
@@ -218,9 +181,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    '''with cProfile.Profile() as pr:
-        main()
-    stats = pstats.Stats(pr)
-    stats.sort_stats(pstats.SortKey.TIME)
-    stats.print_stats()'''
