@@ -43,7 +43,7 @@ if __name__ == '__main__':
     pv_area = 1000
 
     get_max_values()
-    compile_irradiances2()
+    compile_irradiances()
 
     for method in methods:
         for battery in batteries:
