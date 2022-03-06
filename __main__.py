@@ -62,7 +62,7 @@ def main():
     power_per_server = float(config_info['Power per Server Needed'])
     edge_pv_efficiency = float(config_info['PV Efficiency'])
     edge_pv_area = float(config_info['PV Area'])
-    cost_multiplier = float(config_info['Cost Multiplier'])
+    delay_function = config_info['Delay Function']
     node_placement = config_info['Node Placement'].strip()
     policy = config_info['Policy'].strip()
     global_applications = True if config_info['Global Applications'].strip() == "True" else False
@@ -79,9 +79,7 @@ def main():
 
     applications = generate_applications(trace_info)  # generate list of application instances
     total_applications = len(applications)
-
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
-
     check_min_req(applications, server_cores, server_memory)  # prevents infinite loops
 
     # lists to store results
@@ -96,17 +94,17 @@ def main():
 
     # ---------------- simulation ----------------
 
-    processing_time = -1  # counter to tally simulation time (-1 indicates not started yet)
+    processing_time = -1 + 86000  # counter to tally simulation time (-1 indicates not started yet)
     all_servers_empty = False
     partially_completed_applications = []
-
+    max_iterations = 100000000
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
-        if processing_time > 100000000:
-            print('ERROR: exceeding 100,000,000 iterations')
+        if processing_time > max_iterations:
+            print(f'ERROR: exceeding {max_iterations} iterations')
             quit()
 
-        simulated_time_results.append(processing_time)
+        simulated_time_results.append(processing_time - 86000)
         queue_results.append(len(applications))
 
         if diagnostics:
@@ -133,14 +131,17 @@ def main():
                                                           + current_paused_applications)
 
         current_migrations = resume_applications(policy, partially_completed_applications, shortest_distances,
-                                                 cost_multiplier, edge_computing_systems, irradiance_list,
+                                                 delay_function, edge_computing_systems, irradiance_list,
                                                  processing_time, power_per_server, diagnostics)
 
         current_migrations_results.append(current_migrations)
         if len(cumulative_migrations_results) == 0:
             cumulative_migrations_results.append(current_migrations)
         else:
-            cumulative_migrations_results.append(cumulative_migrations_results[-1] + current_migrations)
+            try:
+                cumulative_migrations_results.append(cumulative_migrations_results[-1] + current_migrations)
+            except TypeError:
+                cumulative_migrations_results.append(current_migrations)
 
         if applications:
             start_applications(edge_computing_systems, applications, global_applications, diagnostics)

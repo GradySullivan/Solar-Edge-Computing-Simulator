@@ -130,8 +130,8 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
             if app.parent.on and app.cores <= app.parent.cores and app.memory <= app.parent.memory:
                 if diagnostics:
                     print(f'resume app:{app} on {app.parent.parent}')
+                print(f'resume app:{app} on {app.parent.parent.index} at time {processing_time}')
                 app.parent.start_application(app)
-                current_migrations += 1
                 app.delay = None
                 applications.remove(app)
         return current_migrations
@@ -148,9 +148,11 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         delay = 0
                     else:
                         try:
-                            delay = math.ceil(location_distances[(app.parent.parent, node)] * cost_multiplier * app.memory)
+                            delay = calculate_delay(cost_multiplier, math.ceil(
+                                location_distances[(app.parent.parent, node)]), app.memory)
                         except KeyError:
-                            delay = math.ceil(location_distances[(node, app.parent.parent)] * cost_multiplier * app.memory)
+                            delay = calculate_delay(cost_multiplier, math.ceil(
+                                location_distances[(node, app.parent.parent)]), app.memory)
                     if delay == 0:
                         options.append((power, delay, node, 'wait'))
                     else:
@@ -172,6 +174,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                     if server.on is True and app.cores <= server.cores and app.memory <= server.memory:
                         if diagnostics:
                             print(f'resume app:{app} on {server.parent}')
+                        print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
@@ -183,7 +186,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
         current_migrations = 0
         for app in list(applications):
             if app.delay is None:
-                app.delay = math.ceil(shortest_distances[app.parent.parent][1] * cost_multiplier * app.memory)
+                app.delay = calculate_delay(cost_multiplier, shortest_distances[app.parent.parent][1], app.memory)
             elif app.delay > 0:
                 app.delay -= 1
             if app.delay <= 0:
@@ -191,6 +194,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                     if server.on is True and app.cores <= server.cores and app.memory <= server.memory:
                         if diagnostics:
                             print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
+                        print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
@@ -209,16 +213,13 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         delay = 0
                     else:
                         try:
-                            delay = math.ceil(location_distances[(app.parent.parent, node)] * cost_multiplier * app.memory)
+                            delay = calculate_delay(cost_multiplier, location_distances[(app.parent.parent, node)],
+                                                    app.memory)
                         except KeyError:
-                            delay = math.ceil(location_distances[(node, app.parent.parent)] * cost_multiplier * app.memory)
+                            delay = calculate_delay(cost_multiplier, location_distances[(node, app.parent.parent)],
+                                                    app.memory)
                     future_processing_time = processing_time + delay
-                    loop_breaker = 0
-                    while True:
-                        if loop_breaker >= 86400:
-                            break
-                        else:
-                            loop_breaker += 1
+                    for time_stamp in range(86400):
                         power = node.get_power_generated(irradiance_list[future_processing_time][node.index])
                         if power >= power_per_server:
                             if app.parent.parent == node:
@@ -240,7 +241,6 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                     app.delay = best_choice[1]
                     app.parent = edge_computing_systems[best_choice[2]].servers[0]
                 except ValueError:
-                    print(app.parent)
                     app.delay = 0
             else:
                 if app.delay > 0:
@@ -250,6 +250,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         if server.on and app.cores <= server.cores and app.memory <= server.memory:
                             if diagnostics:
                                 print(f'resume app:{app} on {server.parent}')
+                            print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                             server.start_application(app)
                             current_migrations += 1
                             app.parent = server
@@ -269,37 +270,37 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         delay = 0
                     else:
                         try:
-                            delay = math.ceil(location_distances[(app.parent.parent, node)] * cost_multiplier * app.memory)
+                            delay = calculate_delay(cost_multiplier, location_distances[(app.parent.parent, node)],
+                                                    app.memory)
                         except KeyError:
-                            delay = math.ceil(location_distances[(node, app.parent.parent)] * cost_multiplier * app.memory)
-                    yesterday_irradiance1 = irradiance_list[node.index][processing_time - 90000: processing_time - 86400]
-                    yesterday_irradiance2 = irradiance_list[node.index][processing_time - 86400: processing_time - 82600]
-                    today_irradiance1 = irradiance_list[node.index][processing_time - 3600: processing_time]
+                            delay = calculate_delay(cost_multiplier, location_distances[(node, app.parent.parent)],
+                                                    app.memory)
+                    yesterday_irradiance1 = [value[node.index] for value in irradiance_list][
+                                            processing_time - 90000: processing_time - 86400]
+                    yesterday_irradiance2 = [value[node.index] for value in irradiance_list][
+                                            processing_time - 86400: processing_time - 82800]
+                    today_irradiance1 = [value[node.index] for value in irradiance_list][
+                                        processing_time - 3600: processing_time]
 
-                    if len(yesterday_irradiance1) > 0:
-                        avg_yesterday_irradiance1 = sum(yesterday_irradiance1) / len(yesterday_irradiance1)
+                    avg_yesterday_irradiance1 = sum(yesterday_irradiance1) / len(yesterday_irradiance1)
+                    avg_yesterday_irradiance2 = sum(yesterday_irradiance2) / len(yesterday_irradiance2)
+                    avg_today_irradiance1 = sum(today_irradiance1) / len(today_irradiance1)
+
+                    if avg_yesterday_irradiance1 > 0:
+                        irradiance = avg_yesterday_irradiance2 * avg_today_irradiance1 / avg_yesterday_irradiance1
                     else:
-                        avg_yesterday_irradiance1 = 1000
-                    if len(yesterday_irradiance2) > 0:
-                        avg_yesterday_irradiance2 = sum(yesterday_irradiance2) / len(yesterday_irradiance2)
-                    else:
-                        avg_yesterday_irradiance2 = 1000
-                    try:
-                        avg_today_irradiance1 = sum(today_irradiance1) / len(today_irradiance1)
-                    except ZeroDivisionError:
-                        avg_today_irradiance1 = 1000
-                    irradiance = avg_yesterday_irradiance2 * avg_today_irradiance1 / avg_yesterday_irradiance1
+                        irradiance = 0
+
                     estimated_power = node.get_power_generated(irradiance)
                     if estimated_power >= power_per_server:
                         if app.parent.parent == node:
                             options.append((estimated_power, delay, node.index, 'wait'))
                         else:
                             options.append((estimated_power, delay, node.index, 'transfer'))
-                try:
-                    min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]
-                except ValueError:
-                    min_delay = 0
+
+                min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]  # minimize delay, maximize power
                 better_options = [choice for choice in options if choice[1] == min_delay]
+
                 if len(better_options) == 0:
                     break
                 for index, option in enumerate(better_options):
@@ -318,6 +319,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         current_migrations += 1
                         if diagnostics:
                             print(f'resume app:{app} on {server.parent} {server.parent.index}')
+                        print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                         app.parent = server
                         app.delay = None
                         applications.remove(app)
@@ -362,3 +364,9 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
             node.current_battery += power
         else:
             node.current_battery = node.max_battery
+
+
+def calculate_delay(equation, distance, memory):
+    equation = equation.replace('x', str(distance))
+    equation = eval(equation)
+    return math.ceil(equation * memory)
