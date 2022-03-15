@@ -78,6 +78,7 @@ def main():
     shortest_distances, location_distances = get_shortest_distances(edge_computing_systems)
 
     applications = generate_applications(trace_info)  # generate list of application instances
+    completed_applications = []
     total_applications = len(applications)
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
     check_min_req(applications, server_cores, server_memory)  # prevents infinite loops
@@ -91,6 +92,7 @@ def main():
     current_migrations_results = []
     cumulative_completion_results = []
     completion_rate_results = []
+    total_overhead = 0
 
     # ---------------- simulation ----------------
 
@@ -100,7 +102,7 @@ def main():
     max_iterations = 100000000
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
-        if processing_time > max_iterations:
+        if processing_time > max_iterations + 86000:
             print(f'ERROR: exceeding {max_iterations} iterations')
             quit()
 
@@ -108,11 +110,12 @@ def main():
         queue_results.append(len(applications))
 
         if diagnostics:
-            print(f'Time = {processing_time}')
+            print(f'Time = {processing_time - 86000}')
             print(f'Queue Length: {len(applications)}')
             print(f'Partial: {len(partially_completed_applications)}')
 
-        current_completed = complete_applications(edge_computing_systems, diagnostics)
+        current_completed = complete_applications(edge_computing_systems, completed_applications, processing_time,
+                                                  diagnostics)
 
         if len(cumulative_completion_results) == 0:
             cumulative_completion_results.append(current_completed)
@@ -130,9 +133,9 @@ def main():
             cumulative_paused_applications_results.append(cumulative_paused_applications_results[-1]
                                                           + current_paused_applications)
 
-        current_migrations = resume_applications(policy, partially_completed_applications, shortest_distances,
-                                                 delay_function, edge_computing_systems, irradiance_list,
-                                                 processing_time, power_per_server, diagnostics)
+        current_migrations = resume_applications(policy, partially_completed_applications,
+                                                 shortest_distances, delay_function, edge_computing_systems,
+                                                 irradiance_list, processing_time, power_per_server, diagnostics)
 
         current_migrations_results.append(current_migrations)
         if len(cumulative_migrations_results) == 0:
@@ -144,15 +147,22 @@ def main():
                 cumulative_migrations_results.append(current_migrations)
 
         if applications:
-            start_applications(edge_computing_systems, applications, global_applications, diagnostics)
+            start_applications(edge_computing_systems, applications, processing_time, global_applications, diagnostics)
 
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
+    processing_time -= 86000  # started at t=86000
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
+
+    for app in completed_applications:
+        total_overhead += app.overhead
+
+    idle_rate = sum([app.overhead / (app.end_time - app.start_time) for app in completed_applications]) \
+                / len(completed_applications)
 
     # write results to text file
     now = datetime.now().strftime("%m-%d-%Y_%H-%M-%S")
@@ -161,11 +171,19 @@ def main():
             reader = config.readlines()
         for line in reader:
             file.write(line)
+
         file.write('\n----------------\n')
+        file.write("Completion Info\n")
+        file.write(f"Total Simulated Time (seconds): {processing_time}\n")
+        file.write(f"Total Overhead Time (seconds): {total_overhead}\n")
+        file.write(f"Idle Rate: {idle_rate}")
+        file.write('\n----------------\n')
+
         file.write('Application Completion Locations\n')
         for node in edge_computing_systems:
             file.write(f'Node {node.index}: {node.applications_completed}\n')
         file.write('----------------\n')
+
         file.write('Simulated Time, Queue Length, Currently Paused, Cumulative Paused Applications, Current '
                    'Migrations, Cumulative Migrations, Cumulative Completions, Completion %\n')
         for index, value in enumerate(simulated_time_results):

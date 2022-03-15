@@ -39,6 +39,7 @@ def write_config(policy: str, battery: float, pv_area):
 
 if __name__ == '__main__':
     methods = ['passive', 'greedy', 'super-greedy', 'YOLO', 'look-ahead', 'practical']
+    methods = ['passive', 'greedy']
     batteries = [0]
     pv_area = 1000
 

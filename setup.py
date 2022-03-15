@@ -74,6 +74,12 @@ def generate_location(coords: list, method: str):
         long = coords[0][1]
         coords.remove(coords[0])
         return lat, long
+    elif method == 'assigned-random':
+        index = random.randint(0, len(coords) - 1)
+        lat = coords[index][0]
+        long = coords[index][1]
+        coords.remove(coords[index])
+        return lat, long
     else:
         return None, None
 

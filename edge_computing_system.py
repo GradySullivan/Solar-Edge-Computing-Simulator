@@ -55,3 +55,6 @@ class Application:
         self.time_left = runtime
         self.parent = None
         self.delay = None
+        self.overhead = 0
+        self.start_time = None
+        self.end_time = None

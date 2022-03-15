@@ -4,10 +4,12 @@ import operator
 from setup import *
 
 
-def start_applications(edge_computing_systems: list, applications: list, global_applications: bool, diagnostics: bool):
+def start_applications(edge_computing_systems: list, applications: list, processing_time: int,
+                       global_applications: bool, diagnostics: bool):
     """
     :param edge_computing_systems: list of nodes
     :param applications: list of applications
+    :param processing_time: current second of simulation time
     :param global_applications: determines if applications can start at any server or not
     :param diagnostics: determines whether to print information to console
     :return: None
@@ -24,15 +26,18 @@ def start_applications(edge_computing_systems: list, applications: list, global_
                 if (app.memory <= server.memory) and (app.cores <= server.cores) and global_applications is True \
                         or (app.memory <= server.memory) and (app.cores <= server.cores) and \
                         global_applications is False and server.parent.index == 0:
+                    app.start_time = processing_time
                     server.start_application(app)
                     applications.remove(app)
                     if diagnostics:
                         print('started', app, 'from', app.parent, 'on', app.parent.parent)
 
 
-def complete_applications(edge_computing_systems: list, diagnostics: bool):
+def complete_applications(edge_computing_systems: list, completed_applications: list, processing_time: int,
+    diagnostics: bool):
     """
     :param edge_computing_systems: list of nodes
+    :param completed_applications: list of completed applications
     :param diagnostics: determines whether to print information to console
     :return: None
     """
@@ -43,9 +48,11 @@ def complete_applications(edge_computing_systems: list, diagnostics: bool):
         for application in list(server.applications_running):
             application.time_left -= 1
             if application.time_left <= 0:
+                application.end_time = processing_time
                 server.stop_application(application)
                 current_completed += 1
                 application.parent.parent.applications_completed += 1
+                completed_applications.append(application)
                 if diagnostics:
                     print(f'completed {application} on Node {application.parent.parent.index}')
     return current_completed
@@ -127,12 +134,14 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
     def passive():
         current_migrations = 0
         for app in list(applications):
+            app.overhead += 1
             if app.parent.on and app.cores <= app.parent.cores and app.memory <= app.parent.memory:
                 if diagnostics:
                     print(f'resume app:{app} on {app.parent.parent}')
                 print(f'resume app:{app} on {app.parent.parent.index} at time {processing_time}')
                 app.parent.start_application(app)
                 app.delay = None
+                app.overhead -= 1
                 applications.remove(app)
         return current_migrations
 
@@ -140,6 +149,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
         current_migrations = 0
         location_distances = get_distances(edge_computing_systems)
         for app in list(applications):
+            app.overhead += 1
             if app.delay is None:
                 options = []
                 for node in edge_computing_systems:
@@ -178,6 +188,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
+                        app.overhead -= 1
                         applications.remove(app)
                         break
         return current_migrations
@@ -185,6 +196,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
     def yolo():
         current_migrations = 0
         for app in list(applications):
+            app.overhead += 1
             if app.delay is None:
                 app.delay = calculate_delay(cost_multiplier, shortest_distances[app.parent.parent][1], app.memory)
             elif app.delay > 0:
@@ -198,6 +210,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
+                        app.overhead -= 1
                         applications.remove(app)
                         break
         return current_migrations
@@ -206,6 +219,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
         current_migrations = 0
         location_distances = get_distances(edge_computing_systems)
         for app in list(applications):
+            app.overhead += 1
             if app.delay is None:
                 options = []
                 for node in edge_computing_systems:
@@ -255,6 +269,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                             current_migrations += 1
                             app.parent = server
                             app.delay = None
+                            app.overhead -= 1
                             applications.remove(app)
                             break
         return current_migrations
@@ -263,6 +278,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
         current_migrations = 0
         location_distances = get_distances(edge_computing_systems)
         for app in list(applications):
+            app.overhead += 1
             if app.delay is None:
                 options = []
                 for node in edge_computing_systems:
@@ -322,6 +338,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                         app.parent = server
                         app.delay = None
+                        app.overhead -= 1
                         applications.remove(app)
                         break
         return current_migrations
