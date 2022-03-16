@@ -384,6 +384,7 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
 
 
 def calculate_delay(equation, distance, memory):
+    memory *= 8  # convert MB to Mb
     equation = equation.replace('x', str(distance))
     equation = eval(equation)
-    return math.ceil(equation * memory)
+    return math.ceil(memory / equation)
