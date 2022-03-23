@@ -40,7 +40,7 @@ def compile_irradiances():
             reader = csv.reader(f, delimiter=',')
             next(reader)
             for index, line in enumerate(reader):
-                for _ in range(300):
+                for _ in range(60):  # minute data
                     if line[1] == '' or float(line[1]) < 0:
                         current_data.append(float(0))
                     else:

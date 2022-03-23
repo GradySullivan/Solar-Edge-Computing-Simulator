@@ -58,7 +58,7 @@ def main():
     num_servers = int(config_info['Servers per Node'])
     server_cores = int(config_info['Cores per Server'])
     server_memory = int(config_info['Memory per Server'])
-    battery = float(config_info['Battery Size'])  # measured in Watt-hours
+    battery = float(config_info['Battery Size'])  # measured in Watts
     power_per_server = float(config_info['Power per Server Needed'])
     edge_pv_efficiency = float(config_info['PV Efficiency'])
     edge_pv_area = float(config_info['PV Area'])
@@ -121,6 +121,7 @@ def main():
             cumulative_completion_results.append(current_completed)
         else:
             cumulative_completion_results.append(cumulative_completion_results[-1] + current_completed)
+
         completion_rate_results.append(cumulative_completion_results[-1] / total_applications)
 
         current_paused_applications = shutdown_servers(edge_computing_systems, power_per_server, irradiance_list,

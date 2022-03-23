@@ -32,19 +32,32 @@ def write_config(policy: str, battery: float, pv_area):
         config.write('Irradiance List: irradiance.txt\n')
         config.write('Diagnostics: False\n')
         config.write('--- Node Locations ---\n')
-        config.write('34, -111\n')
-        config.write('36, 138\n')
-        config.write('61, 105')
+        config.write('35.652832, 139.839478\n')
+        config.write('37.5326, 127.024612\n')
+        config.write('34.672314, 135.484802\n')
+        config.write('19.07609, 72.877426\n')
+        config.write('1.29027, 103.851959\n')
+        config.write('-33.867487, 151.20699\n')
+        config.write('55.50816463, -106.5924976\n')
+        config.write('50.110573, 8.684966\n')
+        config.write('53.35014, -6.266155\n')
+        config.write('51.509865, -0.118092\n')
+        config.write('48.864716, 2.349014\n')
+        config.write('-23.533773, -46.62529\n')
+        config.write('38.75066, -77.475143\n')
+        config.write('40.358615, -82.706838\n')
+        config.write('38.837522, -120.895824\n')
+        config.write('44, -120.5')
 
 
 if __name__ == '__main__':
     methods = ['passive', 'greedy', 'super-greedy', 'YOLO', 'look-ahead', 'practical']
-    methods = ['passive', 'greedy']
     batteries = [0]
     pv_area = 1000
 
     get_max_values()
     compile_irradiances()
+    print('irradiances compiled')
 
     for method in methods:
         for battery in batteries:
@@ -53,5 +66,3 @@ if __name__ == '__main__':
                 os.system('__main__.py')
             elif os.name == 'posix':  # for Linux
                 os.system('python3 __main__.py')
-            if method == 'passive':
-                break

@@ -189,6 +189,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         current_migrations += 1
                         app.delay = None
                         app.overhead -= 1
+                        print(app.overhead)
                         applications.remove(app)
                         break
         return current_migrations
@@ -308,12 +309,12 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         irradiance = 0
 
                     estimated_power = node.get_power_generated(irradiance)
-                    if estimated_power >= power_per_server:
+                    if estimated_power >= power_per_server or node == app.parent.parent:
                         if app.parent.parent == node:
                             options.append((estimated_power, delay, node.index, 'wait'))
                         else:
                             options.append((estimated_power, delay, node.index, 'transfer'))
-
+                print(options)
                 min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]  # minimize delay, maximize power
                 better_options = [choice for choice in options if choice[1] == min_delay]
 
