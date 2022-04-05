@@ -53,6 +53,7 @@ class Application:
         self.cores = cores
         self.memory = memory
         self.time_left = runtime
+        self.prev_parent = None
         self.parent = None
         self.delay = None
         self.overhead = 0

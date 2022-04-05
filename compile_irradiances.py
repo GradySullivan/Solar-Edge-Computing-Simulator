@@ -11,6 +11,7 @@ def get_max_values():
             lst2 = []
             reader = csv.reader(f, delimiter=',')
             next(reader)
+            next(reader)
             for line in reader:
                 if line != '':
                     for i in range(1):
@@ -39,6 +40,7 @@ def compile_irradiances():
             current_data = []
             reader = csv.reader(f, delimiter=',')
             next(reader)
+            next(reader)
             for index, line in enumerate(reader):
                 for _ in range(60):  # minute data
                     if line[1] == '' or float(line[1]) < 0:
@@ -47,7 +49,11 @@ def compile_irradiances():
                         current_data.append(float(line[1]))
         data.append(current_data)
 
-    final_data = [[location[index] for location in data] for index, _ in enumerate(data[0])]
+    final_data = []
+    min_len = min(map(len, data))
+
+    for index in range(min_len):
+        final_data.append([location[index] for location in data])
 
     with open('irradiance.txt', 'w', newline='') as file:
         wr = csv.writer(file)

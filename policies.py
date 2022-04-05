@@ -34,10 +34,11 @@ def start_applications(edge_computing_systems: list, applications: list, process
 
 
 def complete_applications(edge_computing_systems: list, completed_applications: list, processing_time: int,
-    diagnostics: bool):
+                          diagnostics: bool):
     """
     :param edge_computing_systems: list of nodes
     :param completed_applications: list of completed applications
+    :param processing_time: current time
     :param diagnostics: determines whether to print information to console
     :return: None
     """
@@ -115,11 +116,12 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
     return current_paused
 
 
-def resume_applications(policy: str, applications: list, shortest_distances: dict, cost_multiplier: float,
-                        edge_computing_systems: list, irradiance_list: list, processing_time: int,
-                        power_per_server: float, diagnostics: bool):
+def resume_applications(policy: str, location_distances: dict, applications: list, shortest_distances: dict,
+                        cost_multiplier: float, edge_computing_systems: list, irradiance_list: list,
+                        processing_time: int, power_per_server: float, diagnostics: bool):
     """
     :param policy: decides which task transfer policy to use
+    :param location_distances: distances in km between nodes
     :param applications: list of applications
     :param shortest_distances: dictionary of (dictionary of node:(closest node,distance) pairs)
     :param cost_multiplier: constant in calculating delay
@@ -147,7 +149,6 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
 
     def greedy():
         current_migrations = 0
-        location_distances = get_distances(edge_computing_systems)
         for app in list(applications):
             app.overhead += 1
             if app.delay is None:
@@ -167,6 +168,7 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         options.append((power, delay, node, 'wait'))
                     else:
                         options.append((power, delay, node, 'transfer'))
+                print('options', options)
                 if policy == 'greedy':
                     try:
                         best_choice = max((option for option in options if option[0] >= power_per_server),
@@ -175,7 +177,9 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         best_choice = max(options, key=lambda n: (n[0], -n[1]))
                 else:
                     best_choice = max(options, key=lambda n: (n[0], -n[1]))
+                print('best', best_choice)
                 app.delay = best_choice[1]
+                app.prev_parent = app.parent
                 app.parent = best_choice[2].servers[0]
             elif app.delay > 0:
                 app.delay -= 1
@@ -186,10 +190,10 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                             print(f'resume app:{app} on {server.parent}')
                         print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                         server.start_application(app)
-                        current_migrations += 1
+                        if app.prev_parent != app.parent:
+                            current_migrations += 1
                         app.delay = None
                         app.overhead -= 1
-                        print(app.overhead)
                         applications.remove(app)
                         break
         return current_migrations
@@ -218,7 +222,6 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
 
     def look_ahead():
         current_migrations = 0
-        location_distances = get_distances(edge_computing_systems)
         for app in list(applications):
             app.overhead += 1
             if app.delay is None:
@@ -245,15 +248,20 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         future_processing_time += 1
                         if power >= power_per_server:
                             break
+                print('time', processing_time)
+                print('options', options)
                 try:
                     min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]
                     better_options = [choice for choice in options if choice[1] == min_delay]
+                    print('better', better_options)
                     for index, option in enumerate(better_options):
                         if index == 0:
                             best_choice = option
                         if option[3] == 'wait':
                             best_choice = option
+                    print('best', best_choice)
                     app.delay = best_choice[1]
+                    app.prev_parent = app.parent
                     app.parent = edge_computing_systems[best_choice[2]].servers[0]
                 except ValueError:
                     app.delay = 0
@@ -267,7 +275,8 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                                 print(f'resume app:{app} on {server.parent}')
                             print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                             server.start_application(app)
-                            current_migrations += 1
+                            if app.prev_parent != app.parent:
+                                current_migrations += 1
                             app.parent = server
                             app.delay = None
                             app.overhead -= 1
@@ -277,7 +286,6 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
 
     def practical():
         current_migrations = 0
-        location_distances = get_distances(edge_computing_systems)
         for app in list(applications):
             app.overhead += 1
             if app.delay is None:
@@ -299,6 +307,16 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                     today_irradiance1 = [value[node.index] for value in irradiance_list][
                                         processing_time - 3600: processing_time]
 
+                    if not yesterday_irradiance1:
+                        yesterday_irradiance1 = [value[node.index] for value in irradiance_list][
+                                                0: processing_time - 86400]
+                    if not yesterday_irradiance1:
+                        yesterday_irradiance2 = [value[node.index] for value in irradiance_list][
+                                                0: processing_time - 82800]
+
+                    print(processing_time)
+                    print(len(yesterday_irradiance1))
+
                     avg_yesterday_irradiance1 = sum(yesterday_irradiance1) / len(yesterday_irradiance1)
                     avg_yesterday_irradiance2 = sum(yesterday_irradiance2) / len(yesterday_irradiance2)
                     avg_today_irradiance1 = sum(today_irradiance1) / len(today_irradiance1)
@@ -309,23 +327,32 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         irradiance = 0
 
                     estimated_power = node.get_power_generated(irradiance)
-                    if estimated_power >= power_per_server or node == app.parent.parent:
+
+                    if node == app.parent.parent:
+                        wait_option = (estimated_power, delay, node.index, 'wait')
+
+                    if estimated_power >= power_per_server:
                         if app.parent.parent == node:
                             options.append((estimated_power, delay, node.index, 'wait'))
                         else:
                             options.append((estimated_power, delay, node.index, 'transfer'))
-                print(options)
-                min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]  # minimize delay, maximize power
-                better_options = [choice for choice in options if choice[1] == min_delay]
+                print('time', processing_time)
+                print('options', options)
 
-                if len(better_options) == 0:
-                    break
+                if options:
+                    min_delay = min(options, key=lambda n: (n[1], -n[0]))[1]  # minimize delay, maximize power
+                    better_options = [choice for choice in options if choice[1] == min_delay]
+                else:
+                    better_options = [wait_option]  # wait if no option has power
+                print('better', better_options)
                 for index, option in enumerate(better_options):
                     if index == 0:
                         best_choice = option
                     if option[3] == 'wait':
                         best_choice = option
                 app.delay = best_choice[1]
+                print('best', best_choice)
+                app.prev_parent = app.parent
                 app.parent = edge_computing_systems[best_choice[2]].servers[0]
             elif app.delay > 0:
                 app.delay -= 1
@@ -337,8 +364,8 @@ def resume_applications(policy: str, applications: list, shortest_distances: dic
                         if diagnostics:
                             print(f'resume app:{app} on {server.parent} {server.parent.index}')
                         print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
-                        app.parent = server
-                        app.delay = None
+                        if app.prev_parent != app.parent:
+                            app.delay = None
                         app.overhead -= 1
                         applications.remove(app)
                         break
@@ -387,5 +414,9 @@ def update_batteries(edge_computing_systems: list, power_per_server: float, irra
 def calculate_delay(equation, distance, memory):
     memory *= 8  # convert MB to Mb
     equation = equation.replace('x', str(distance))
-    equation = eval(equation)
-    return math.ceil(memory / equation)
+    try:
+        equation = eval(equation)
+        delay = math.ceil(memory / equation)
+    except ZeroDivisionError:
+        delay = 0
+    return delay

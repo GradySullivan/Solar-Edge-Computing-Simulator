@@ -1,5 +1,7 @@
 import operator
 import random
+import os
+import csv
 
 from __main__ import *
 
@@ -19,17 +21,18 @@ def config_setup():
             if line[0] == '--- Node Locations ---':
                 break
             config_info[line[0]] = line[1]
-
-    coords = []  # list of (lat/long) tuples
-    with open('config.txt', 'r') as file:
-        reader = csv.reader(file, delimiter=',')
-        for i in range(files_lines):
-            next(reader)
-        for line in reader:
-            coords.append((line[0], line[1]))
-    config_info['Coords'] = coords
-
     return config_info
+
+
+def get_node_info():
+    num_nodes = 0
+    coords = []
+    for file in os.listdir('Irradiance Lists'):
+        num_nodes += 1
+        with open(f'Irradiance Lists/{file}', 'r') as file:
+            line = file.readline().rstrip().split(',')
+            coords.append((line[0], line[1]))  # lat/long values
+    return num_nodes, coords
 
 
 def generate_nodes(num_edges: int, num_servers: int, edge_pv_efficiency: float, edge_pv_area: float, server_cores: int,
@@ -97,8 +100,7 @@ def generate_applications(file: str):
         next(csv_reader)  # skip header
         for row in csv_reader:
             try:
-                if float(row[3]) <= 64:
-                    applications.append(Application(int(float(row[2])), int(float(row[3])), int(float(row[5]))))
+                applications.append(Application(int(float(row[2])), int(float(row[3])), int(float(row[5]))))
             except ValueError:
                 pass
     return applications
@@ -113,6 +115,7 @@ def generate_irradiance_list(file: str):
     irr_list = []
     with open(file, 'r') as txt_file:
         txt_reader = csv.reader(txt_file, delimiter=',')
+        next(txt_reader)  # skip header
         next(txt_reader)  # skip header
         for row in txt_reader:
             irr_interval = []

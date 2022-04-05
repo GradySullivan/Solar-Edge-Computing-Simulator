@@ -1,20 +1,15 @@
 Config
-Nodes: 3
-Servers per Node: 1
+Servers per Node: 64
 Cores per Server: 1
-Memory per Server: 4096
+Memory per Server: 1024
 Battery Size: 0
 Power per Server Needed: 250
 PV Efficiency: .22
 PV Area: 1000
 Delay Function: 40885*x**-0.702
 Node Placement: assigned
-Policy: super-greedy
+Policy: practical
 Global Applications: False
-Traces: traces.csv
+Traces: traces_1CPU.csv
 Irradiance List: irradiance.txt
 Diagnostics: False
---- Node Locations ---
-34, -111
-36, 138
-61, 105

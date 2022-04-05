@@ -51,10 +51,11 @@ def simplify_time(sec: int):
 
 def main():
     start_time = time.time()  # start timer
+    get_node_info()
 
     # can be changed in config.txt
     config_info = config_setup()
-    num_edges = int(config_info['Nodes'])
+    num_edges, coords = get_node_info()
     num_servers = int(config_info['Servers per Node'])
     server_cores = int(config_info['Cores per Server'])
     server_memory = int(config_info['Memory per Server'])
@@ -70,8 +71,6 @@ def main():
     irradiance_info = config_info['Irradiance List'].strip()
     diagnostics = True if (config_info['Diagnostics'].strip()) == "True" else False
 
-    coords = config_info['Coords']
-
     edge_computing_systems = generate_nodes(num_edges, num_servers, edge_pv_efficiency, edge_pv_area, server_cores,
                                             server_memory, battery, coords, node_placement)
 
@@ -80,10 +79,11 @@ def main():
     applications = generate_applications(trace_info)  # generate list of application instances
     completed_applications = []
     total_applications = len(applications)
+    location_distances = get_distances(edge_computing_systems)
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
     check_min_req(applications, server_cores, server_memory)  # prevents infinite loops
 
-    # lists to store results
+    # results
     simulated_time_results = []
     queue_results = []
     cumulative_paused_applications_results = []
@@ -94,23 +94,24 @@ def main():
     completion_rate_results = []
     total_overhead = 0
 
+    sec_per_day = 86400
     # ---------------- simulation ----------------
 
-    processing_time = -1 + 86000  # counter to tally simulation time (-1 indicates not started yet)
+    processing_time = -1 + sec_per_day  # counter to tally simulation time (-1 indicates not started yet)
     all_servers_empty = False
     partially_completed_applications = []
     max_iterations = 100000000
     while len(applications) != 0 or len(partially_completed_applications) != 0 or all_servers_empty is False:
         processing_time += 1
-        if processing_time > max_iterations + 86000:
+        if processing_time > max_iterations + sec_per_day:
             print(f'ERROR: exceeding {max_iterations} iterations')
             quit()
 
-        simulated_time_results.append(processing_time - 86000)
+        simulated_time_results.append(processing_time - sec_per_day)
         queue_results.append(len(applications))
 
         if diagnostics:
-            print(f'Time = {processing_time - 86000}')
+            print(f'Time = {processing_time - sec_per_day}')
             print(f'Queue Length: {len(applications)}')
             print(f'Partial: {len(partially_completed_applications)}')
 
@@ -134,7 +135,7 @@ def main():
             cumulative_paused_applications_results.append(cumulative_paused_applications_results[-1]
                                                           + current_paused_applications)
 
-        current_migrations = resume_applications(policy, partially_completed_applications,
+        current_migrations = resume_applications(policy, location_distances, partially_completed_applications,
                                                  shortest_distances, delay_function, edge_computing_systems,
                                                  irradiance_list, processing_time, power_per_server, diagnostics)
 
@@ -155,7 +156,7 @@ def main():
 
         all_servers_empty = get_applications_running(edge_computing_systems)  # check if applications are running
 
-    processing_time -= 86000  # started at t=86000
+    processing_time -= sec_per_day  # started at t=86400
     simplify_time(processing_time)  # simulation time
     print(f'Execution Time: {time.time() - start_time}')  # end timer
 
@@ -172,6 +173,8 @@ def main():
             reader = config.readlines()
         for line in reader:
             file.write(line)
+            if line == 'Config\n':
+                file.write(f"Nodes: {num_edges}\n")
 
         file.write('\n----------------\n')
         file.write("Completion Info\n")
