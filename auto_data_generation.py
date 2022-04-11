@@ -6,7 +6,7 @@ import __main__
 from compile_irradiances import *
 
 
-def write_config(file: str, policy: str, battery: float, pv_area, cores: int):
+def write_config(file: str, policy: str, battery: float, pv_area):
     """
     :param file: file with trace data to run
     :param policy: what type of migration policy will be used
@@ -17,9 +17,9 @@ def write_config(file: str, policy: str, battery: float, pv_area, cores: int):
     """Writes Config File - allows for automatic changes"""
     with open('config.txt', 'w') as config:
         config.write('Config\n')
-        config.write(f'Servers per Node: {cores}\n')
+        config.write('Servers per Node: 1\n')
         config.write('Cores per Server: 1\n')
-        config.write('Memory per Server: 1024\n')
+        config.write('Memory per Server: 99999\n')
         config.write(f'Battery Size: {battery}\n')
         config.write('Power per Server Needed: 250\n')
         config.write('PV Efficiency: .22\n')
@@ -35,22 +35,19 @@ def write_config(file: str, policy: str, battery: float, pv_area, cores: int):
 
 if __name__ == '__main__':
     methods = ['passive', 'greedy', 'super-greedy', 'YOLO', 'look-ahead', 'practical']
-    methods = ['practical']
-    files = ['traces_1CPU.csv']
+    files = ['traces.csv']
     batteries = [0]
-    cores = [64, 128]
     pv_area = 1000
 
     get_max_values()
     compile_irradiances()
 
     for file in files:
-        for core in cores:
-            for method in methods:
-                print(method)
-                for battery in batteries:
-                    write_config(file, method, battery, pv_area, core)
-                    if os.name == 'nt':  # for Windows
-                        os.system('__main__.py')
-                    elif os.name == 'posix':  # for Linux
-                        os.system('python3 __main__.py')
+        for method in methods:
+            print(method)
+            for battery in batteries:
+                write_config(file, method, battery, pv_area)
+                if os.name == 'nt':  # for Windows
+                    os.system('__main__.py')
+                elif os.name == 'posix':  # for Linux
+                    os.system('python3 __main__.py')

@@ -309,13 +309,10 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
 
                     if not yesterday_irradiance1:
                         yesterday_irradiance1 = [value[node.index] for value in irradiance_list][
-                                                0: processing_time - 86400]
-                    if not yesterday_irradiance1:
+                                                0: processing_time]
+                    if not yesterday_irradiance2:
                         yesterday_irradiance2 = [value[node.index] for value in irradiance_list][
-                                                0: processing_time - 82800]
-
-                    print(processing_time)
-                    print(len(yesterday_irradiance1))
+                                                0: processing_time]
 
                     avg_yesterday_irradiance1 = sum(yesterday_irradiance1) / len(yesterday_irradiance1)
                     avg_yesterday_irradiance2 = sum(yesterday_irradiance2) / len(yesterday_irradiance2)
