@@ -5,12 +5,14 @@ from setup import *
 
 
 def start_applications(edge_computing_systems: list, applications: list, processing_time: int,
-                       global_applications: bool, diagnostics: bool):
+                       global_applications: bool, degradable_applications: bool, degradable_multiplier,
+                       diagnostics: bool):
     """
     :param edge_computing_systems: list of nodes
     :param applications: list of applications
     :param processing_time: current second of simulation time
     :param global_applications: determines if applications can start at any server or not
+    :param degradable_applications: determines if applications can scale based on available cores
     :param diagnostics: determines whether to print information to console
     :return: None
     """
@@ -19,14 +21,23 @@ def start_applications(edge_computing_systems: list, applications: list, process
     for server in powered_servers:
         if server.cores > 0 and server.memory > 0:
             for app in list(applications[:1000]):
-                '''To start an application, the server must have enough memory and cores. If this is fulfilled,
-                    an application will run based on the global_applications value. If true, applications are considered
-                    global and can start from any node. If false, applications must start from the a server whose node's 
-                    coordinates are first listed under "--- Node Locations ---" '''
-                if (app.memory <= server.memory) and (app.cores <= server.cores) and global_applications is True \
-                        or (app.memory <= server.memory) and (app.cores <= server.cores) and \
-                        global_applications is False and server.parent.index == 0:
+                if (app.memory <= server.memory and app.cores <= server.cores and global_applications
+                    and not degradable_applications) or (app.memory <= server.memory and app.cores <= server.cores and
+                                                         server.parent.index == 0 and not degradable_applications):
                     app.start_time = processing_time
+                    print(app.time_left)
+                    server.start_application(app)
+                    applications.remove(app)
+                    if diagnostics:
+                        print('started', app, 'from', app.parent, 'on', app.parent.parent)
+                # criteria for degradable applications
+                elif (app.memory <= server.memory and global_applications and degradable_applications) \
+                        or (app.memory <= server.memory and degradable_applications and server.parent.index == 0):
+                    app.start_time = processing_time
+                    app.cores = server.cores if server.cores <= app.original_cores * degradable_multiplier \
+                        else app.original_cores * degradable_multiplier
+                    app.time_left = app.runtime * app.original_cores / app.cores
+                    print(app.time_left)
                     server.start_application(app)
                     applications.remove(app)
                     if diagnostics:
@@ -118,7 +129,8 @@ def shutdown_servers(edge_computing_systems: list, power_per_server: float, irra
 
 def resume_applications(policy: str, location_distances: dict, applications: list, shortest_distances: dict,
                         cost_multiplier: float, edge_computing_systems: list, irradiance_list: list,
-                        processing_time: int, power_per_server: float, diagnostics: bool):
+                        processing_time: int, power_per_server: float, degradable_applications: bool,
+                        degradable_multiplier, diagnostics: bool):
     """
     :param policy: decides which task transfer policy to use
     :param location_distances: distances in km between nodes
@@ -129,6 +141,7 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
     :param irradiance_list: list of solar irradiance tuples
     :param processing_time: simulated time
     :param power_per_server: power each server consumes
+    :param degradable_applications: determines if applications can scale based on available cores
     :param diagnostics: determines whether to print information to console
     :return: None
     """
@@ -137,7 +150,19 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
         current_migrations = 0
         for app in list(applications):
             app.overhead += 1
-            if app.parent.on and app.cores <= app.parent.cores and app.memory <= app.parent.memory:
+            if degradable_applications and app.parent.on and app.parent.cores > 0 and app.memory <= app.parent.memory:
+                prev_cores = app.cores
+                app.cores = app.parent.cores if app.parent.cores <= app.original_cores * degradable_multiplier \
+                    else app.original_cores * degradable_multiplier
+                app.time_left = app.time_left * prev_cores / app.cores
+                if diagnostics:
+                    print(f'resume app:{app} on {app.parent.parent}')
+                app.parent.start_application(app)
+                app.delay = None
+                app.overhead -= 1
+                applications.remove(app)
+            elif app.parent.on and app.cores <= app.parent.cores and \
+                    app.memory <= app.parent.memory:
                 if diagnostics:
                     print(f'resume app:{app} on {app.parent.parent}')
                 print(f'resume app:{app} on {app.parent.parent.index} at time {processing_time}')
@@ -185,7 +210,21 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                 app.delay -= 1
             if app.delay <= 0:
                 for server in app.parent.parent.servers:
-                    if server.on is True and app.cores <= server.cores and app.memory <= server.memory:
+                    if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
+                        prev_cores = app.cores
+                        app.cores = server.cores if server.cores <= app.original_cores * degradable_multiplier \
+                            else app.original_cores * degradable_multiplier
+                        app.time_left = app.time_left * prev_cores / app.cores
+                        if diagnostics:
+                            print(f'resume app:{app} on {server.parent}')
+                        server.start_application(app)
+                        if app.prev_parent != app.parent:
+                            current_migrations += 1
+                        app.delay = None
+                        app.overhead -= 1
+                        applications.remove(app)
+                        break
+                    elif server.on is True and app.cores <= server.cores and app.memory <= server.memory:
                         if diagnostics:
                             print(f'resume app:{app} on {server.parent}')
                         print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
@@ -208,10 +247,24 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                 app.delay -= 1
             if app.delay <= 0:
                 for server in shortest_distances[app.parent.parent][0].servers:
-                    if server.on is True and app.cores <= server.cores and app.memory <= server.memory:
+                    if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
+                        prev_cores = app.cores
+                        app.cores = server.cores if server.cores <= app.original_cores * degradable_multiplier \
+                            else app.original_cores * degradable_multiplier
+                        app.time_left = app.time_left * prev_cores / app.cores
                         if diagnostics:
-                            print(f'resume app:{app}, from {app.parent.parent} to {server.parent}')
-                        print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
+                            print(f'resume app:{app}, from {app.parent.parent} to {server.parent} at time '
+                                  f'{processing_time}')
+                        server.start_application(app)
+                        current_migrations += 1
+                        app.delay = None
+                        app.overhead -= 1
+                        applications.remove(app)
+                        break
+                    elif server.on is True and app.cores <= server.cores and app.memory <= server.memory:
+                        if diagnostics:
+                            print(f'resume app:{app}, from {app.parent.parent} to {server.parent} at time '
+                                  f'{processing_time}')
                         server.start_application(app)
                         current_migrations += 1
                         app.delay = None
@@ -270,9 +323,23 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                     app.delay -= 1
                 if app.delay <= 0:
                     for server in app.parent.parent.servers:
-                        if server.on and app.cores <= server.cores and app.memory <= server.memory:
+                        if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
+                            prev_cores = app.cores
+                            app.cores = server.cores if server.cores <= app.original_cores * degradable_multiplier \
+                                else app.original_cores * degradable_multiplier
+                            app.time_left = app.time_left * prev_cores / app.cores
+                            server.start_application(app)
                             if diagnostics:
-                                print(f'resume app:{app} on {server.parent}')
+                                print(f'resume app:{app} on node {server.parent.index} at time {processing_time}')
+                            app.parent = server
+                            app.delay = None
+                            app.overhead -= 1
+                            print(app.time_left)
+                            applications.remove(app)
+                            break
+                        elif server.on and app.cores <= server.cores and app.memory <= server.memory:
+                            if diagnostics:
+                                print(f'resume app:{app} on node {server.parent.index} at time {processing_time}')
                             print(f'resume app:{app} on {server.parent.index} at time {processing_time}')
                             server.start_application(app)
                             if app.prev_parent != app.parent:
@@ -280,6 +347,7 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                             app.parent = server
                             app.delay = None
                             app.overhead -= 1
+                            print(app.time_left)
                             applications.remove(app)
                             break
         return current_migrations
@@ -355,7 +423,20 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                 app.delay -= 1
             if app.delay <= 0:
                 for server in app.parent.parent.servers:
-                    if server.on and app.cores <= server.cores and app.memory <= server.memory:
+                    if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
+                        prev_cores = app.cores
+                        app.cores = server.cores if server.cores <= app.original_cores * degradable_multiplier \
+                            else app.original_cores * degradable_multiplier
+                        app.time_left = app.time_left * prev_cores / app.cores
+                        server.start_application(app)
+                        if diagnostics:
+                            print(f'resume app:{app} on node {server.parent.index} at time {processing_time}')
+                        if app.prev_parent != app.parent:
+                            app.delay = None
+                        app.overhead -= 1
+                        applications.remove(app)
+                        break
+                    elif server.on and app.cores <= server.cores and app.memory <= server.memory:
                         server.start_application(app)
                         current_migrations += 1
                         if diagnostics:

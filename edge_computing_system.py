@@ -51,6 +51,7 @@ class Application:
     def __init__(self, runtime: int, cores: int, memory: int):
         self.runtime = runtime
         self.cores = cores
+        self.original_cores = cores
         self.memory = memory
         self.time_left = runtime
         self.prev_parent = None

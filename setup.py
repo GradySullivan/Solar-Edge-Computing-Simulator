@@ -165,11 +165,12 @@ def get_shortest_distances(edge_computing_systems: list):
     return shortest_distances, location_distances
 
 
-def check_min_req(application_list: list, server_cores: int, server_memory: int):
+def check_min_req(application_list: list, server_cores: int, server_memory: int, degradable_applications: bool):
     """
     :param application_list: list of applications
     :param server_cores: cores per server
     :param server_memory: memory per server, in MB
+    :param degradable_applications: whether applications can vary CPU usage based on availability
     :return: None
     """
     """Determines if provided resources can support the application load"""
@@ -179,11 +180,11 @@ def check_min_req(application_list: list, server_cores: int, server_memory: int)
             max_cores = app.cores
         if app.memory > max_memory:
             max_memory = app.memory
-    if max_cores > server_cores and max_memory > server_memory:
+    if max_cores > server_cores and max_memory > server_memory and not degradable_applications:
         print(f'Allotted {server_cores} core(s) per server. Minimum of {max_cores} required')
         print(f'Allotted {server_memory} MB of memory per server. Minimum of {max_memory} MB required')
         quit()
-    if max_cores > server_cores:
+    if max_cores > server_cores and not degradable_applications:
         print(f'Allotted {server_cores} core(s) per server. Minimum of {max_cores} required')
         quit()
     if max_memory > server_memory:

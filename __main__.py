@@ -67,6 +67,8 @@ def main():
     node_placement = config_info['Node Placement'].strip()
     policy = config_info['Policy'].strip()
     global_applications = True if config_info['Global Applications'].strip() == "True" else False
+    degradable_applications = True if config_info['Degradable Applications'].strip() == "True" else False
+    degradable_multiplier = int(config_info['Degradable Multiplier'])
     trace_info = config_info['Traces'].strip()
     irradiance_info = config_info['Irradiance List'].strip()
     diagnostics = True if (config_info['Diagnostics'].strip()) == "True" else False
@@ -81,7 +83,7 @@ def main():
     total_applications = len(applications)
     location_distances = get_distances(edge_computing_systems)
     irradiance_list = generate_irradiance_list(irradiance_info)  # generate list of irradiance values
-    check_min_req(applications, server_cores, server_memory)  # prevents infinite loops
+    check_min_req(applications, server_cores, server_memory, degradable_applications)  # prevents infinite loops
 
     # results
     simulated_time_results = []
@@ -137,7 +139,8 @@ def main():
 
         current_migrations = resume_applications(policy, location_distances, partially_completed_applications,
                                                  shortest_distances, delay_function, edge_computing_systems,
-                                                 irradiance_list, processing_time, power_per_server, diagnostics)
+                                                 irradiance_list, processing_time, power_per_server,
+                                                 degradable_applications, degradable_multiplier, diagnostics)
 
         current_migrations_results.append(current_migrations)
         if len(cumulative_migrations_results) == 0:
@@ -149,7 +152,8 @@ def main():
                 cumulative_migrations_results.append(current_migrations)
 
         if applications:
-            start_applications(edge_computing_systems, applications, processing_time, global_applications, diagnostics)
+            start_applications(edge_computing_systems, applications, processing_time, global_applications,
+                               degradable_applications, degradable_multiplier, diagnostics)
 
         if battery > 0:
             update_batteries(edge_computing_systems, power_per_server, irradiance_list, processing_time)

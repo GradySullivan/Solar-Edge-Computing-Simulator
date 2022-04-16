@@ -1,7 +1,7 @@
 Config
-Servers per Node: 64
-Cores per Server: 1
-Memory per Server: 1024
+Servers per Node: 1
+Cores per Server: 4
+Memory per Server: 99999
 Battery Size: 0
 Power per Server Needed: 250
 PV Efficiency: .22
@@ -10,6 +10,8 @@ Delay Function: 40885*x**-0.702
 Node Placement: assigned
 Policy: practical
 Global Applications: False
-Traces: traces_1CPU.csv
+Degradable Applications: True
+Degradable Multiplier: 2
+Traces: traces.csv
 Irradiance List: irradiance.txt
 Diagnostics: False

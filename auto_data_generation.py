@@ -28,6 +28,8 @@ def write_config(file: str, policy: str, battery: float, pv_area):
         config.write('Node Placement: assigned\n')
         config.write(f'Policy: {policy}\n')
         config.write('Global Applications: False\n')
+        config.write('Degradable Applications: False\n')
+        config.write('Degradable Applications: True\n')
         config.write(f'Traces: {file}\n')
         config.write('Irradiance List: irradiance.txt\n')
         config.write('Diagnostics: False\n')
