@@ -68,7 +68,7 @@ def main():
     policy = config_info['Policy'].strip()
     global_applications = True if config_info['Global Applications'].strip() == "True" else False
     degradable_applications = True if config_info['Degradable Applications'].strip() == "True" else False
-    degradable_multiplier = int(config_info['Degradable Multiplier'])
+    degradable_multiplier = float(config_info['Degradable Multiplier'])
     trace_info = config_info['Traces'].strip()
     irradiance_info = config_info['Irradiance List'].strip()
     diagnostics = True if (config_info['Diagnostics'].strip()) == "True" else False

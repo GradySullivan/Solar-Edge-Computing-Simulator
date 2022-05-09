@@ -5,7 +5,7 @@ from setup import *
 
 
 def start_applications(edge_computing_systems: list, applications: list, processing_time: int,
-                       global_applications: bool, degradable_applications: bool, degradable_multiplier,
+                       global_applications: bool, degradable_applications: bool, degradable_multiplier: float,
                        diagnostics: bool):
     """
     :param edge_computing_systems: list of nodes
@@ -13,6 +13,7 @@ def start_applications(edge_computing_systems: list, applications: list, process
     :param processing_time: current second of simulation time
     :param global_applications: determines if applications can start at any server or not
     :param degradable_applications: determines if applications can scale based on available cores
+    :param degradable_multiplier: determines how many more cores can be utilized compared to the original core count
     :param diagnostics: determines whether to print information to console
     :return: None
     """
@@ -41,11 +42,14 @@ def start_applications(edge_computing_systems: list, applications: list, process
                     and not degradable_applications) or (app.memory <= server.memory and app.cores <= server.cores and
                                                          server.parent.index == 0 and not degradable_applications):
                     finalize_start_application(app, server, diagnostics)
-                elif (app.memory <= server.memory and global_applications and degradable_applications) \
-                        or (app.memory <= server.memory and degradable_applications and server.parent.index == 0):
+                elif ((app.memory <= server.memory and global_applications and degradable_applications) \
+                        or (app.memory <= server.memory and degradable_applications and server.parent.index == 0)) \
+                        and server.cores > 0:
                     # determine how many cores the application will start using
+                    #print(f'starting with {app.cores} cores')
                     app.cores = server.cores if server.cores <= app.original_cores * degradable_multiplier \
                         else app.original_cores * degradable_multiplier
+                    #print(f'now with {app.cores} cores')
                     app.time_left = app.runtime * app.original_cores / app.cores
                     finalize_start_application(app, server, diagnostics)
 
@@ -160,9 +164,11 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
             app.overhead += 1
             if degradable_applications and app.parent.on and app.parent.cores > 0 and app.memory <= app.parent.memory:
                 adjust_cores(app, app.parent)
-                current_migrations = finalize_resume_application(app, app.parent, current_migrations, diagnostics)
+                current_migrations = finalize_resume_application(policy, app, app.parent, current_migrations,
+                                                                 diagnostics)
             elif app.parent.on and app.cores <= app.parent.cores and app.memory <= app.parent.memory:
-                current_migrations = finalize_resume_application(app, app.parent, current_migrations, diagnostics)
+                current_migrations = finalize_resume_application(policy, app, app.parent, current_migrations,
+                                                                 diagnostics)
         return current_migrations
 
     def greedy():
@@ -203,10 +209,12 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                 for server in app.parent.parent.servers:
                     if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
                         adjust_cores(app, server)
-                        current_migrations = finalize_resume_application(app, server, current_migrations, diagnostics)
+                        current_migrations = finalize_resume_application(policy, app, server, current_migrations,
+                                                                         diagnostics)
                         break
                     elif server.on and app.cores <= server.cores and app.memory <= server.memory:
-                        current_migrations = finalize_resume_application(app, server, current_migrations, diagnostics)
+                        current_migrations = finalize_resume_application(policy, app, server, current_migrations,
+                                                                         diagnostics)
                         break
         return current_migrations
 
@@ -222,10 +230,12 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                 for server in shortest_distances[app.parent.parent][0].servers:
                     if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
                         adjust_cores(app, server)
-                        current_migrations = finalize_resume_application(app, server, current_migrations, diagnostics)
+                        current_migrations = finalize_resume_application(policy, app, server, current_migrations,
+                                                                         diagnostics)
                         break
                     elif server.on and app.cores <= server.cores and app.memory <= server.memory:
-                        current_migrations = finalize_resume_application(app, server, current_migrations, diagnostics)
+                        current_migrations = finalize_resume_application(policy, app, server, current_migrations,
+                                                                         diagnostics)
                         break
         return current_migrations
 
@@ -278,11 +288,11 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                     for server in app.parent.parent.servers:
                         if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
                             adjust_cores(app, server)
-                            current_migrations = finalize_resume_application(app, server, current_migrations,
+                            current_migrations = finalize_resume_application(policy, app, server, current_migrations,
                                                                              diagnostics)
                             break
                         elif server.on and app.cores <= server.cores and app.memory <= server.memory:
-                            current_migrations = finalize_resume_application(app, server, current_migrations,
+                            current_migrations = finalize_resume_application(policy, app, server, current_migrations,
                                                                              diagnostics)
                             break
         return current_migrations
@@ -356,10 +366,12 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
                 for server in app.parent.parent.servers:
                     if server.on and degradable_applications and server.cores > 0 and app.memory <= server.memory:
                         adjust_cores(app, server)
-                        current_migrations = finalize_resume_application(app, server, current_migrations, diagnostics)
+                        current_migrations = finalize_resume_application(policy, app, server, current_migrations,
+                                                                         diagnostics)
                         break
                     elif server.on and app.cores <= server.cores and app.memory <= server.memory:
-                        current_migrations = finalize_resume_application(app, server, current_migrations, diagnostics)
+                        current_migrations = finalize_resume_application(policy, app, server, current_migrations,
+                                                                         diagnostics)
                         break
         return current_migrations
 
@@ -377,9 +389,10 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
             else math.floor(application.original_cores * degradable_multiplier)
         application.time_left = application.time_left * prev_cores / application.cores
 
-    def finalize_resume_application(application: object, server: object, current_migrations: int, diagnostics: bool):
+    def finalize_resume_application(policy: str, application: object, server: object, current_migrations: int,
+                                    diagnostics: bool):
         """
-
+        :param policy: migration policy
         :param application: application being processed
         :param server: server in which application is resuming
         :param current_migrations: migrations this time iteration
@@ -388,7 +401,7 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
         """
         """ performs operations needed by each migration policy for resuming an application"""
         server.start_application(application)
-        if application.prev_parent != application.parent:
+        if application.prev_parent != application.parent and policy != 'passive':
             current_migrations += 1
         application.delay = None
         application.overhead -= 1
