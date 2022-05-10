@@ -156,9 +156,11 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
     :param degradable_multiplier: determines how many more cores can be utilized compared to the original core count
     :return: None
     """
+    '''Decides when and how to transfer applications'''
 
     # Migration Policies
     def passive():
+        # Never migrates applications
         current_migrations = 0
         for app in list(applications):
             app.overhead += 1
@@ -172,6 +174,8 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
         return current_migrations
 
     def greedy():
+        # Greedy - Transfer applications to the nearest node with enough available power
+        # Super-Greedy - Transfer applications to the node with most available power
         current_migrations = 0
         for app in list(applications):
             app.overhead += 1
@@ -219,6 +223,7 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
         return current_migrations
 
     def yolo():
+        # Transfer applications to nearest node
         current_migrations = 0
         for app in list(applications):
             app.overhead += 1
@@ -240,6 +245,7 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
         return current_migrations
 
     def look_ahead():
+        # use future irradiance values to chose where to transfer applications
         current_migrations = 0
         for app in list(applications):
             app.overhead += 1
@@ -298,6 +304,7 @@ def resume_applications(policy: str, location_distances: dict, applications: lis
         return current_migrations
 
     def practical():
+        # use past irradiance values to predict the optimal node to transfer an application
         current_migrations = 0
         for app in list(applications):
             app.overhead += 1
